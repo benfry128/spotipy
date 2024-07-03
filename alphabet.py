@@ -8,7 +8,7 @@ sp = utils.spotipySetup('playlist-read-private playlist-read-collaborative user-
 # SETTINGS
 EXCLUDE_COLLAB_PLAYLISTS = True
 EXCLUDE_OTHERS_PLAYLISTS = True
-EXPLICIT_ALLOWED = False
+EXPLICIT_ALLOWED = True
 MY_USER_ID = os.getenv('ME_SPOTIFY_ID')
 USER_ID_INPUT = input('User id? ')
 USER_ID = MY_USER_ID if USER_ID_INPUT == 'mine' else USER_ID_INPUT
@@ -44,18 +44,14 @@ for playlist in playlists:
         track_name = track['track']['name']
         track_id = track['track']['uri']
         first_letter = 0
-        for letter in track_name:
-            if letter.lower() in letter_list:
-                first_letter = letter.lower()
+        for character in track_name:
+            if character.lower() in letter_list:
+                first_letter = character.lower()
                 break
         if not first_letter:
             continue
-        # track_artist = track['track']['artists'][0]['name']
 
-        if track_id in letterDict[first_letter]:
-            letterDict[first_letter][track_id] += 1
-        else:
-            letterDict[first_letter][track_id] = 1
+        letterDict[first_letter][track_id] = 1
 
 # loop through letter dict to choose a song from
 
