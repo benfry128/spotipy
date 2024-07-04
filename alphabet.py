@@ -15,9 +15,10 @@ USER_ID = MY_USER_ID if USER_ID_INPUT == 'mine' else USER_ID_INPUT
 
 user = sp.user(USER_ID)
 
-result = sp.user_playlists(USER_ID)
-
 playlists = utils.getAllPlaylists(USER_ID, sp)
+
+punctuation = '\'"()*&^%$#@!.,></?;:[]{}\\|-++_`~'
+punctuation_list = list(punctuation)
 
 letters = 'abcdefghijklmnopqrstuvwxyz'
 letter_list = list(letters)
@@ -26,20 +27,25 @@ letterDict = {}
 for letter in letters:
     letterDict[letter] = {}
 
+all_playlists = False
+
 for playlist in playlists:
     if (EXCLUDE_COLLAB_PLAYLISTS and playlist['collaborative']) or (EXCLUDE_OTHERS_PLAYLISTS and not playlist['owner']['id'] == USER_ID):
         print(f"{playlist['name']} EXCLUDED")
         continue
-    readPlaylist = input(f"Include playlist {playlist['name']}? (y/n/s to skip the rest) ")
-    if readPlaylist == 's':
-        break
-    elif readPlaylist != 'y':
-        continue
+    if not all_playlists:
+        readPlaylist = input(f"Include playlist {playlist['name']}? (y/n/s to skip the rest/a to read the rest) ")
+        if readPlaylist == 's':
+            break
+        elif readPlaylist == 'a':
+            all_playlists = True
+        elif readPlaylist != 'y':
+            continue
     print(playlist['name'])
     tracks = utils.getAllTracks(playlist['uri'], sp)
 
     for track in tracks:
-        if not track['track'] or (track['track']['explicit'] and not EXPLICIT_ALLOWED):
+        if not track['track'] or (track['track']['explicit'] and not EXPLICIT_ALLOWED) or track['is_local']:
             continue
         track_name = track['track']['name']
         track_id = track['track']['uri']
@@ -47,6 +53,8 @@ for playlist in playlists:
         for character in track_name:
             if character.lower() in letter_list:
                 first_letter = character.lower()
+                break
+            elif character not in punctuation_list:
                 break
         if not first_letter:
             continue
@@ -73,6 +81,6 @@ if allLetters or input("Playlist will not be complete, continue? (y/n) ") == 'y'
         if uris:
             final_uris.append(uris[random.randint(0, len(uris) - 1)])
 
-    a_to_z_playlist = sp.user_playlist_create(MY_USER_ID, f'A to Z - {user['display_name']} - {datetime.now(tz=timezone.utc).strftime('%d/%m/%Y')}')
+    a_to_z_playlist = sp.user_playlist_create(MY_USER_ID, f'A to Z - {user['display_name']} - {datetime.now(tz=timezone.utc).strftime('%m/%d/%Y')}')
 
     result = sp.user_playlist_add_tracks(MY_USER_ID, a_to_z_playlist['uri'], final_uris)
