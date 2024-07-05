@@ -9,31 +9,21 @@ my_id = '31tnaej2hznzuj25tx2p2lf7p4xy'
 
 recents = []
 
-currently_playing = sp.current_playback()['is_playing']
-
 while days > 0:
+    print(f'{days} days back...')
     startTime = int((time.time()-14400) / 86400) * 86400 + 14400 - (86400 * days)
     endTime = startTime + 86400
-    nextSet = utils.getRecentTracks(startTime, endTime)
-    print(f'Collecting lastfm data... Got {len(nextSet)} tracks from {days} days back')
-    if nextSet:
-        recents.extend(utils.getRecentTracks(startTime, endTime)[1 if currently_playing else 0:])  # every lastfm api call returns the currently playing track, so remove if currently playing
+    nextSet = utils.getRecentTracks(startTime, endTime, sp)
+    recents.extend(nextSet)
     days -= 1
 
 recentDict = {}
 for recent in recents:
-    nameAndArtist = f'{recent['name']}~{recent['artist']['#text']}'.lower()
+    nameAndArtist = f'{recent['name']} {recent['artist']['#text']}'.lower()
     if nameAndArtist in recentDict:
         recentDict[nameAndArtist] += 1
     else:
         recentDict[nameAndArtist] = 1
-
-# for key in recentDict:
-#     splitKey = key.split('~')
-#     if len(splitKey) > 2:
-#         print(f"Song has tilde WHY. Anyway it's {key} and you listened to it {recentDict[key]} times.")
-#     else:
-#         print(f'Listened to {splitKey[0]} by {splitKey[1]} {recentDict[key]} time{"" if recentDict[key] == 1 else "s"}.')
 
 playlists = utils.getAllPlaylists(my_id, sp)
 
@@ -62,10 +52,10 @@ for playlist in playlists:
     mostList = []
 
     for track in tracks:
-        trackName = track['track']['name']
-        trackArtist = track['track']['artists'][0]['name']
-        trackId = track['track']['uri']
-        code = f'{trackName}~{trackArtist}'.lower()
+        trackName = track['name']
+        trackArtist = track['artists'][0]['name']
+        trackId = track['uri']
+        code = f'{trackName} {trackArtist}'.lower()
         if code in recentDict:
             frequency = recentDict[code]
             if frequency > mostPlays:

@@ -15,20 +15,11 @@ for pair in playlist_ids:
     old_id = pair[0]
     new_id = pair[1]
 
-    playlist = sp.playlist(old_id)
-    total_tracks = playlist['tracks']['total']
-    print(total_tracks)
-
-    offset = 0
-    tracks = []
-    while offset < total_tracks:
-        print(f"Getting tracks {offset}-{offset+99}")
-        tracks.extend(sp.playlist_tracks(old_id, offset=offset)['items'])
-        offset += 100
+    tracks = utils.getAllTracks(old_id, sp)
 
     trackIds = []
     for track in tracks:
-        trackId = track['track']['uri']
+        trackId = track['uri']
         trackIds.append(trackId)
 
     random.shuffle(trackIds)

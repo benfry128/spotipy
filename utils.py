@@ -24,9 +24,18 @@ def spotipySetup(scope):
     return sp
 
 
-def getRecentTracks(startTime, endTime):
+def getRecentTracks(startTime, endTime, sp):
     r = requests.get(f"https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=benfry128&api_key={lastFMApiKey}&format=json&from={startTime}&to={endTime}&limit=200")
     recents = r.json()['recenttracks']['track']
+
+    if type(recents) is dict:
+        recents = [recents]
+
+    if sp.current_playback()['is_playing']:
+        del recents[0]  # every lastfm api call returns the currently playing track, so remove if currently playing
+
+    print(f'Collecting lastfm data... Got {len(recents)} tracks')
+
     return recents
 
 
@@ -54,4 +63,10 @@ def getAllTracks(playlist_id, sp):
         tracks.extend(sp.playlist_tracks(playlist_id, offset=offset)['items'])
         offset += 100
 
-    return tracks
+    real_tracks = []
+
+    for track in tracks:
+        if not track['is_local'] and track['track'] and track['track']['type'] == 'track':
+            real_tracks.append(track['track'])
+
+    return real_tracks

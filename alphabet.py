@@ -45,10 +45,10 @@ for playlist in playlists:
     tracks = utils.getAllTracks(playlist['uri'], sp)
 
     for track in tracks:
-        if not track['track'] or (track['track']['explicit'] and not EXPLICIT_ALLOWED) or track['is_local']:
+        if track['explicit'] and not EXPLICIT_ALLOWED:
             continue
-        track_name = track['track']['name']
-        track_id = track['track']['uri']
+        track_name = track['name']
+        track_id = track['uri']
         first_letter = 0
         for character in track_name:
             if character.lower() in letter_list:

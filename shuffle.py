@@ -35,9 +35,9 @@ for playlist_pair in playlist_ids:
     back_of_list = []
     front_of_list = []
     for track in tracks:
-        trackName = track['track']['name']
-        trackArtist = track['track']['artists'][0]['name']
-        trackId = track['track']['uri']
+        trackName = track['name']
+        trackArtist = track['artists'][0]['name']
+        trackId = track['uri']
         # print(f'{trackName} {trackArtist}')
         if f'{trackName} {trackArtist}'.lower() in recentDict:
             print(trackName + " was in recents")
