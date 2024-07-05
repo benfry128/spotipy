@@ -2,12 +2,12 @@ import random
 import time
 import utils
 
-sp = utils.spotipySetup('playlist-modify-public')
+sp = utils.spotipySetup('playlist-modify-public playlist-read-private playlist-read-collaborative user-read-playback-state')
 
 startTime = int((time.time()-14400) / 86400) * 86400 - 72000
 endTime = startTime + 86400
 
-recents = utils.getRecentTracks(startTime, endTime)
+recents = utils.getRecentTracks(startTime, endTime, sp)
 
 recentDict = {}
 for recent in recents:
@@ -18,10 +18,6 @@ playlist_ids = [
     ["5MS4Z0D5HDugNZspLDs9uU", "6JJn8w2iqrxIFXUczrmT86"],  # thonkers
     ["42C2EObXUN25rSCzM99QTK", "1hNFjAax1k8n36HYIqT8V2"]   # vibes
 ]
-
-# for i in range(0, 50):
-#    sp.playlist_add_items("1hNFjAax1k8n36HYIqT8V2", ['2YS7dyxfOw4ir5TX9USD7U', '2fkeWbM6iqTw7oGHTYm2lw', '2YS7dyxfOw4ir5TX9USD7U', '2fkeWbM6iqTw7oGHTYm2lw'])
-
 
 for playlist_pair in playlist_ids:
     new_id = playlist_pair[1]
@@ -38,7 +34,6 @@ for playlist_pair in playlist_ids:
         trackName = track['name']
         trackArtist = track['artists'][0]['name']
         trackId = track['uri']
-        # print(f'{trackName} {trackArtist}')
         if f'{trackName} {trackArtist}'.lower() in recentDict:
             print(trackName + " was in recents")
             back_of_list.append(trackId)

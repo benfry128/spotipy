@@ -67,6 +67,30 @@ def getAllTracks(playlist_id, sp):
 
     for track in tracks:
         if not track['is_local'] and track['track'] and track['track']['type'] == 'track':
-            real_tracks.append(track['track'])
-
+            if 'US' in track['track']['available_markets']:
+                real_tracks.append(track['track']) 
+            else:
+                alt = trackDownTrack(track['track'], sp)
+                if alt:
+                    real_tracks.append(alt)
+    print(len(real_tracks))
     return real_tracks
+
+
+def trackDownTrack(track, sp):
+    goodName = track['name'].lower()
+    goodArtist = track['artists'][0]['name'].lower()
+    isrc = track['external_ids']['isrc']
+
+    good_tracks = sp.search(q=f'isrc:{isrc}', type='track')['tracks']['items']
+    if good_tracks:
+        return good_tracks[0]
+
+    good_tracks = sp.search(q=f'track:{goodName} artist:{goodArtist}', type='track')['tracks']['items']
+    if good_tracks:
+        newName = good_tracks[0]['name'].lower()
+        newArtist = good_tracks[0]['artists'][0]['name'].lower()
+
+        if goodName == newName and goodArtist == newArtist:
+            return good_tracks[0]
+    return None
