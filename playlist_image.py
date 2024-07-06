@@ -1,7 +1,6 @@
 import utils
 
-
-sp = utils.spotipySetup('playlist-read-private playlist-read-collaborative user-read-playback-state')
+sp = utils.spotipySetup()
 
 results = utils.getAllTracks('https://open.spotify.com/playlist/1ciFrlllVeEBETOkvFn4qN?si=23930ee47fd34dac', sp)
 

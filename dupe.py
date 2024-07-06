@@ -1,9 +1,7 @@
 import random
 import utils
 
-scope = 'playlist-modify-public'
-
-sp = utils.spotipySetup(scope)
+sp = utils.spotipySetup()
 
 playlist_ids = [
     ["5Lh62TlIAUHgaFYo6IE2cZ", "1ciFrlllVeEBETOkvFn4qN"],  # bangers

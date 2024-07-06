@@ -3,7 +3,7 @@ import random
 import os
 from datetime import datetime, timezone
 
-sp = utils.spotipySetup('playlist-read-private playlist-read-collaborative user-read-playback-state playlist-modify-public')
+sp = utils.spotipySetup()
 
 # SETTINGS
 EXCLUDE_COLLAB_PLAYLISTS = True

@@ -1,6 +1,6 @@
 import utils
 
-sp = utils.spotipySetup('playlist-read-private playlist-read-collaborative user-read-playback-state')
+sp = utils.spotipySetup()
 
 days = int(input("How many days back would you like to go? "))
 
