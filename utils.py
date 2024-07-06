@@ -68,7 +68,7 @@ def getAllTracks(playlist_id, sp):
     for track in tracks:
         if not track['is_local'] and track['track'] and track['track']['type'] == 'track':
             if 'US' in track['track']['available_markets']:
-                real_tracks.append(track['track']) 
+                real_tracks.append(track['track'])
             else:
                 alt = trackDownTrack(track['track'], sp)
                 if alt:
