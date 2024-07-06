@@ -3,6 +3,8 @@ import os
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import requests
+from PIL import Image
+import io
 
 load_dotenv()
 lastFMApiKey = os.getenv('LAST_FM_API_KEY')
@@ -63,8 +65,10 @@ def getAllTracks(playlist_id, sp):
         tracks.extend(sp.playlist_tracks(playlist_id, offset=offset)['items'])
         offset += 100
 
-    real_tracks = []
+    print(f'Retrieved {len(tracks)}')
 
+    print('Now digging through to find good versions')
+    real_tracks = []
     for track in tracks:
         if not track['is_local'] and track['track'] and track['track']['type'] == 'track':
             if 'US' in track['track']['available_markets']:
@@ -73,7 +77,8 @@ def getAllTracks(playlist_id, sp):
                 alt = trackDownTrack(track['track'], sp)
                 if alt:
                     real_tracks.append(alt)
-    print(len(real_tracks))
+
+    print(f'Finished, retrieved {len(real_tracks)} tracks in the end')
     return real_tracks
 
 
@@ -94,3 +99,19 @@ def trackDownTrack(track, sp):
         if goodName == newName and goodArtist == newArtist:
             return good_tracks[0]
     return None
+
+
+def compile_image(to_a_side, size, image_urls):
+    bigImage = Image.new("RGB", (size * to_a_side, size * to_a_side))
+
+    for id, url in enumerate(image_urls):
+        print('Building image...')
+        response = requests.get(url, stream=True)
+        image = Image.open(io.BytesIO(response.content))
+        x = (id % to_a_side) * size
+        y = (id // to_a_side) * size
+        bigImage.paste(image, (x, y))
+        del image
+        del response
+
+    bigImage.show()
