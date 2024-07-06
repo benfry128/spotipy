@@ -1,10 +1,11 @@
 import utils
+import os
 
 sp = utils.spotipySetup()
 
 days = int(input("How many days back would you like to go? "))
 
-my_id = '31tnaej2hznzuj25tx2p2lf7p4xy'
+MY_USER_ID = os.getenv('ME_SPOTIFY_ID')
 
 recents = utils.getRecentTracks(days, 0, sp)
 
@@ -16,7 +17,7 @@ for recent in recents:
     else:
         recentDict[nameAndArtist] = 1
 
-playlists = utils.getAllPlaylists(my_id, sp)
+playlists = utils.getAllPlaylists(MY_USER_ID, sp)
 
 for playlist in playlists:
     print("~" * 200)
