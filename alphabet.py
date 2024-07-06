@@ -13,8 +13,6 @@ MY_USER_ID = os.getenv('ME_SPOTIFY_ID')
 USER_ID_INPUT = input('User id? ')
 USER_ID = MY_USER_ID if USER_ID_INPUT == 'mine' else USER_ID_INPUT
 
-user = sp.user(USER_ID)
-
 playlists = utils.getAllPlaylists(USER_ID, sp)
 
 punctuation = '\'"()*&^%$#@!.,></?;:[]{}\\|-++_`~'
@@ -81,6 +79,6 @@ if allLetters or input("Playlist will not be complete, continue? (y/n) ") == 'y'
         if uris:
             final_uris.append(uris[random.randint(0, len(uris) - 1)])
 
-    a_to_z_playlist = sp.user_playlist_create(MY_USER_ID, f'A to Z - {user['display_name']} - {datetime.now(tz=timezone.utc).strftime('%m/%d/%Y')}')
+    a_to_z_playlist = sp.user_playlist_create(MY_USER_ID, f'A to Z - {sp.user(USER_ID)['display_name']} - {datetime.now(tz=timezone.utc).strftime('%m/%d/%Y')}')
 
     result = sp.user_playlist_add_tracks(MY_USER_ID, a_to_z_playlist['uri'], final_uris)
