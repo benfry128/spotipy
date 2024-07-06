@@ -7,7 +7,7 @@ sp = utils.spotipySetup('playlist-modify-public playlist-read-private playlist-r
 startTime = int((time.time()-14400) / 86400) * 86400 - 72000
 endTime = startTime + 86400
 
-recents = utils.getRecentTracks(startTime, endTime, sp)
+recents = utils.getRecentTracks(1, 1, sp)
 
 recentDict = {}
 for recent in recents:

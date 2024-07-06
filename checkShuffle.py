@@ -1,5 +1,4 @@
 import utils
-import time
 
 sp = utils.spotipySetup('playlist-read-private playlist-read-collaborative user-read-playback-state')
 
@@ -7,15 +6,7 @@ days = int(input("How many days back would you like to go? "))
 
 my_id = '31tnaej2hznzuj25tx2p2lf7p4xy'
 
-recents = []
-
-while days > 0:
-    print(f'{days} days back...')
-    startTime = int((time.time()-14400) / 86400) * 86400 + 14400 - (86400 * days)
-    endTime = startTime + 86400
-    nextSet = utils.getRecentTracks(startTime, endTime, sp)
-    recents.extend(nextSet)
-    days -= 1
+recents = utils.getRecentTracks(days, 0, sp)
 
 recentDict = {}
 for recent in recents:
