@@ -9,13 +9,21 @@ USER_ID = MY_USER_ID if USER_ID_INPUT == 'mine' else USER_ID_INPUT
 
 playlists = utils.getAllPlaylists(USER_ID, sp)
 
-skip_playlists = ['BangerS', 'VibeS', 'ThonkerS', 'Classics - Hi', 'Classics - Lo', 'To Listen', ]
+skip_playlists = ['Bangers', 'Vibes', 'Thonkers', 'Classics - Hi', 'Classics - Lo', 'To Listen', ]
 
 artists = {}
 
 for playlist in playlists:
     if playlist['collaborative'] or not playlist['owner']['id'] == USER_ID or playlist['name'] in skip_playlists:
         print(f"{playlist['name']} EXCLUDED")
+        continue
+    analyze = input(f'Analyze playlist "{playlist['name']}"? (y/n/s to skip all) ')
+    while analyze != 'y' and analyze != 'n' and analyze != 's':
+        analyze = input(f'You idiot.\nAnalyze playlist "{playlist['name']}"? (y/n/s to skip all) ')
+
+    if analyze == 's':
+        break
+    elif analyze == 'n':
         continue
 
     print(playlist['name'])
@@ -28,3 +36,26 @@ for playlist in playlists:
             else:
                 artists[artist_uri] = 1
     utils.printDict(artists)
+
+sorted_artists = sorted(artists, key=artists.get, reverse=True)
+
+genres = {}
+
+for artist_uri in sorted_artists:
+    artist = sp.artist(artist_uri)
+    print(f'{artist['name']} genres: {artist['genres']}')
+    for genre in artist['genres']:
+        if genre in genres:
+            genres[genre].append(artist['name'])
+        else:
+            genres[genre] = [artist['name']]
+
+
+def lengthGet(n):
+    return len(genres[n])
+
+
+sorted_genres = sorted(genres, key=lengthGet, reverse=True)
+
+for genre in sorted_genres:
+    print(f'{genre}: {genres[genre]}')
