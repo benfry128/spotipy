@@ -6,11 +6,15 @@ import requests
 from PIL import Image
 import io
 import time
+from datetime import datetime
 
 load_dotenv()
 lastFMApiKey = os.getenv('LAST_FM_API_KEY')
 spotifyID = os.getenv('SPOTIFY_CLIENT_ID')
 spotifySecret = os.getenv('SPOTIFY_CLIENT_SECRET')
+
+LAST_FM_FIRST_DAY = datetime(2024, 1, 2)
+FIRST_DAY_SECONDS = LAST_FM_FIRST_DAY.timestamp()
 
 
 def printDict(d):
@@ -26,6 +30,33 @@ def spotipySetup():
                                                    redirect_uri="http://localhost:1234",
                                                    scope=scope))
     return sp
+
+
+def getAllRecents():
+    '''
+    Read 
+    '''
+
+    
+    all_recents = []
+    time = FIRST_DAY_SECONDS
+
+    for i in range(end_days_back, start_days_back + 1):
+        startTime = int((time.time()-14400) / 86400) * 86400 + 14400 - (86400 * i)
+        endTime = startTime + 86400
+
+        r = requests.get(f"https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=benfry128&api_key={lastFMApiKey}&format=json&from={startTime}&to={endTime}&limit=200")
+        recents = r.json()['recenttracks']['track']
+
+        if type(recents) is dict:
+            recents = [recents]
+
+        if sp.current_playback()['is_playing']:
+            del recents[0]  # every lastfm api call returns the currently playing track, so remove if currently playing
+
+        print(f'Collecting lastfm data from {i} days back...Got {len(recents)} tracks')
+        all_recents.extend(recents)
+
 
 
 def getRecentTracks(start_days_back, end_days_back, sp):
@@ -45,6 +76,9 @@ def getRecentTracks(start_days_back, end_days_back, sp):
             del recents[0]  # every lastfm api call returns the currently playing track, so remove if currently playing
 
         print(f'Collecting lastfm data from {i} days back...Got {len(recents)} tracks')
+        if recents:
+            print(recents[0])
+        input("HI")
         all_recents.extend(recents)
 
     return all_recents
