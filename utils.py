@@ -9,9 +9,10 @@ import time
 from datetime import datetime
 
 load_dotenv()
-lastFMApiKey = os.getenv('LAST_FM_API_KEY')
-spotifyID = os.getenv('SPOTIFY_CLIENT_ID')
-spotifySecret = os.getenv('SPOTIFY_CLIENT_SECRET')
+LAST_FM_API_KEY = os.getenv('LAST_FM_API_KEY')
+SPOTIFY_CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID')
+SPOTIFY_CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET')
+MYSQL_PWD = os.getenv('MYSQL_PWD')
 
 LAST_FM_FIRST_DAY = datetime(2024, 1, 2)
 FIRST_DAY_SECONDS = LAST_FM_FIRST_DAY.timestamp()
@@ -25,11 +26,10 @@ def printDict(d):
 def spotipySetup():
     scope = 'ugc-image-upload user-read-playback-state user-modify-playback-state user-read-currently-playing playlist-read-private playlist-read-collaborative playlist-modify-private playlist-modify-public  user-follow-modify user-follow-read user-read-playback-position user-top-read user-read-recently-played user-library-modify user-library-read user-read-email user-read-private'
     load_dotenv()
-    sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=spotifyID,
-                                                   client_secret=spotifySecret,
-                                                   redirect_uri="http://localhost:1234",
-                                                   scope=scope))
-    return sp
+    return spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=SPOTIFY_CLIENT_ID,
+                                                     client_secret=SPOTIFY_CLIENT_SECRET,
+                                                     redirect_uri="http://localhost:1234",
+                                                     scope=scope))
 
 
 def getAllRecents():
@@ -45,7 +45,7 @@ def getAllRecents():
         startTime = int((time.time()-14400) / 86400) * 86400 + 14400 - (86400 * i)
         endTime = startTime + 86400
 
-        r = requests.get(f"https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=benfry128&api_key={lastFMApiKey}&format=json&from={startTime}&to={endTime}&limit=200")
+        r = requests.get(f"https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=benfry128&api_key={LAST_FM_API_KEY}&format=json&from={startTime}&to={endTime}&limit=200")
         recents = r.json()['recenttracks']['track']
 
         if type(recents) is dict:
@@ -58,7 +58,6 @@ def getAllRecents():
         all_recents.extend(recents)
 
 
-
 def getRecentTracks(start_days_back, end_days_back, sp):
     all_recents = []
 
@@ -66,7 +65,7 @@ def getRecentTracks(start_days_back, end_days_back, sp):
         startTime = int((time.time()-14400) / 86400) * 86400 + 14400 - (86400 * i)
         endTime = startTime + 86400
 
-        r = requests.get(f"https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=benfry128&api_key={lastFMApiKey}&format=json&from={startTime}&to={endTime}&limit=200")
+        r = requests.get(f"https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=benfry128&api_key={LAST_FM_API_KEY}&format=json&from={startTime}&to={endTime}&limit=200")
         recents = r.json()['recenttracks']['track']
 
         if type(recents) is dict:
