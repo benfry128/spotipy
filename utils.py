@@ -7,6 +7,7 @@ from PIL import Image
 import io
 import time
 from datetime import datetime
+import mysql.connector
 
 load_dotenv()
 LAST_FM_API_KEY = os.getenv('LAST_FM_API_KEY')
@@ -15,7 +16,15 @@ SPOTIFY_CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET')
 MYSQL_PWD = os.getenv('MYSQL_PWD')
 
 LAST_FM_FIRST_DAY = datetime(2024, 1, 2)
-FIRST_DAY_SECONDS = LAST_FM_FIRST_DAY.timestamp()
+FIRST_DAY_SECONDS = int(LAST_FM_FIRST_DAY.timestamp())
+
+DB = mysql.connector.connect(
+    host='localhost',
+    user='root',
+    password=MYSQL_PWD,
+    database='spotify_toolkit'
+)
+db_cursor = DB.cursor()
 
 
 def printDict(d):
@@ -32,30 +41,33 @@ def spotipySetup():
                                                      scope=scope))
 
 
-def getAllRecents():
-    '''
-    Read 
-    '''
+def update_db(sp):
+    db_cursor.execute('SELECT MAX(time) FROM scrobbles')
 
-    
-    all_recents = []
-    time = FIRST_DAY_SECONDS
+    db_max_time = db_cursor.fetchone()[0]
 
-    for i in range(end_days_back, start_days_back + 1):
-        startTime = int((time.time()-14400) / 86400) * 86400 + 14400 - (86400 * i)
-        endTime = startTime + 86400
+    if not db_max_time:
+        db_max_time = FIRST_DAY_SECONDS
 
-        r = requests.get(f"https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=benfry128&api_key={LAST_FM_API_KEY}&format=json&from={startTime}&to={endTime}&limit=200")
-        recents = r.json()['recenttracks']['track']
+    sql = 'INSERT INTO scrobbles (time, image_url, artist, album, name) VALUES (%s, %s, %s, %s, %s)'
 
-        if type(recents) is dict:
-            recents = [recents]
+    for t in range(db_max_time, int(time.time()), 86400):
+        db_additions = []
+        result = requests.get(f"https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=benfry128&api_key={LAST_FM_API_KEY}&format=json&from={t}&to={t + 86400}&limit=200")
+        tracks = result.json()['recenttracks']['track']
+
+        if type(tracks) is dict:
+            tracks = [tracks]
 
         if sp.current_playback()['is_playing']:
-            del recents[0]  # every lastfm api call returns the currently playing track, so remove if currently playing
+            del tracks[0]  # every lastfm api call returns the currently playing track, so remove if currently playing
 
-        print(f'Collecting lastfm data from {i} days back...Got {len(recents)} tracks')
-        all_recents.extend(recents)
+        date_str = datetime.fromtimestamp(t).strftime('%m/%d/%Y')
+        print(f'Collecting lastfm data around {date_str} ...Got {len(tracks)} tracks')
+
+        db_additions = [(track['date']['uts'], track['image'][3]['#text'], track['artist']['#text'], track['album']['#text'], track['name']) for track in tracks]
+        db_cursor.executemany(sql, db_additions)
+        DB.commit()
 
 
 def getRecentTracks(start_days_back, end_days_back, sp):
