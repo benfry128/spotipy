@@ -75,12 +75,6 @@ def getRecentTracks(start_days_back, end_days_back, sp):
 
     sql = 'SELECT * FROM scrobbles WHERE utc > %s AND utc < %s'
     db_cursor.execute(sql, ((int((time.time()-14400) / 86400) - start_days_back) * 86400 + 14400, (int((time.time()-14400) / 86400) - end_days_back + 1) * 86400 + 14400))
-    date_str = datetime.fromtimestamp((int((time.time()-14400) / 86400) - start_days_back) * 86400 + 14400).strftime('%m/%d/%Y %H:%M')
-    print(date_str)
-    date_str = datetime.fromtimestamp((int((time.time()-14400) / 86400) - end_days_back + 1) * 86400 + 14400).strftime('%m/%d/%Y %H:%M')
-    print(date_str)
-    recents = db_cursor.fetchall()
-
     recents_dicts = [
         {
             'utc': recent[0],
@@ -88,7 +82,7 @@ def getRecentTracks(start_days_back, end_days_back, sp):
             'artist': recent[2],
             'album': recent[3],
             'image_url': recent[4]
-        } for recent in recents
+        } for recent in db_cursor.fetchall()
     ]
     return recents_dicts
 
