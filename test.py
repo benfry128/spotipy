@@ -40,7 +40,6 @@ results = mycursor.fetchall()
 for result in results:
     goodName = only_an(result[0].lower())
     goodArtist = only_an(result[1].lower())
-    
 
     possible_tracks = sp.search(q=f'track:{result[0].lower()} artist:{result[1].lower()}', type='track')['tracks']['items']
     if possible_tracks:
