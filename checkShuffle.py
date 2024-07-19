@@ -11,7 +11,7 @@ recents = utils.getRecentTracks(days, 0, sp)
 
 recentDict = {}
 for recent in recents:
-    nameAndArtist = f'{recent['name']} {recent['artist']['#text']}'.lower()
+    nameAndArtist = f'{recent['name']} {recent['artist']}'.lower()
     if nameAndArtist in recentDict:
         recentDict[nameAndArtist] += 1
     else:

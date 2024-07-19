@@ -11,7 +11,7 @@ recents = utils.getRecentTracks(1, 1, sp)
 
 recentDict = {}
 for recent in recents:
-    recentDict[f'{recent['name']} {recent['artist']['#text']}'.lower()] = True
+    recentDict[f'{recent['name']} {recent['artist']}'.lower()] = True
 
 playlist_ids = [
     ["5Lh62TlIAUHgaFYo6IE2cZ", "1ciFrlllVeEBETOkvFn4qN"],  # bangers

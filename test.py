@@ -17,10 +17,22 @@ mydb = mysql.connector.connect(
 
 mycursor = mydb.cursor()
 
-sql = 'INSERT INTO scrobbles (time, image_url, artist, album, name) VALUES ("123", "abcd", "BEYONCE", "BEYONCE", "flawless")'
+# sql = 'INSERT INTO scrobbles (time, image_url, artist, album, name) VALUES ("123", "abcd", "BEYONCE", "BEYONCE", "flawless")'
 
-mycursor.execute(sql)
+# mycursor.execute(sql)
 
-mydb.commit()
+# mydb.commit()
 
-print(mycursor.rowcount)
+# print(mycursor.rowcount)
+
+# utils.update_db(sp)
+
+# mycursor.execute('select distinct artist from scrobbles')
+
+# artists = [artist[0] for artist in mycursor.fetchall()]
+
+# print(artists)
+
+# for artist in artists:
+
+print(utils.getRecentTracks(1, 1, sp))

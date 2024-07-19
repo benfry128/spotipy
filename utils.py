@@ -42,14 +42,14 @@ def spotipySetup():
 
 
 def update_db(sp):
-    db_cursor.execute('SELECT MAX(time) FROM scrobbles')
+    db_cursor.execute('SELECT MAX(utc) FROM scrobbles')
 
     db_max_time = db_cursor.fetchone()[0]
 
     if not db_max_time:
         db_max_time = FIRST_DAY_SECONDS
 
-    sql = 'INSERT INTO scrobbles (time, image_url, artist, album, name) VALUES (%s, %s, %s, %s, %s)'
+    sql = 'INSERT INTO scrobbles (utc, image_url, artist, album, name) VALUES (%s, %s, %s, %s, %s)'
 
     for t in range(db_max_time, int(time.time()), 86400):
         db_additions = []
@@ -71,28 +71,26 @@ def update_db(sp):
 
 
 def getRecentTracks(start_days_back, end_days_back, sp):
-    all_recents = []
+    update_db(sp)
 
-    for i in range(end_days_back, start_days_back + 1):
-        startTime = int((time.time()-14400) / 86400) * 86400 + 14400 - (86400 * i)
-        endTime = startTime + 86400
+    sql = 'SELECT * FROM scrobbles WHERE utc > %s AND utc < %s'
+    db_cursor.execute(sql, ((int((time.time()-14400) / 86400) - start_days_back) * 86400 + 14400, (int((time.time()-14400) / 86400) - end_days_back + 1) * 86400 + 14400))
+    date_str = datetime.fromtimestamp((int((time.time()-14400) / 86400) - start_days_back) * 86400 + 14400).strftime('%m/%d/%Y %H:%M')
+    print(date_str)
+    date_str = datetime.fromtimestamp((int((time.time()-14400) / 86400) - end_days_back + 1) * 86400 + 14400).strftime('%m/%d/%Y %H:%M')
+    print(date_str)
+    recents = db_cursor.fetchall()
 
-        r = requests.get(f"https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=benfry128&api_key={LAST_FM_API_KEY}&format=json&from={startTime}&to={endTime}&limit=200")
-        recents = r.json()['recenttracks']['track']
-
-        if type(recents) is dict:
-            recents = [recents]
-
-        if sp.current_playback()['is_playing']:
-            del recents[0]  # every lastfm api call returns the currently playing track, so remove if currently playing
-
-        print(f'Collecting lastfm data from {i} days back...Got {len(recents)} tracks')
-        if recents:
-            print(recents[0])
-        input("HI")
-        all_recents.extend(recents)
-
-    return all_recents
+    recents_dicts = [
+        {
+            'utc': recent[0],
+            'name': recent[1],
+            'artist': recent[2],
+            'album': recent[3],
+            'image_url': recent[4]
+        } for recent in recents
+    ]
+    return recents_dicts
 
 
 def getAllPlaylists(user_id, sp):
