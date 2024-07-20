@@ -8,6 +8,7 @@ import io
 import time
 from datetime import datetime
 import mysql.connector
+import re
 
 load_dotenv()
 LAST_FM_API_KEY = os.getenv('LAST_FM_API_KEY')
@@ -42,6 +43,12 @@ def spotipySetup():
 
 
 def update_db(sp):
+    def get_bridge_code(title, artist, album):
+        return re.sub(r'\W+', '', title + artist + album).lower()
+
+    def remove_apostrophe(str):
+        return re.sub("'", '', str).lower()
+
     db_cursor.execute('SELECT MAX(utc) FROM scrobbles')
 
     db_max_time = db_cursor.fetchone()[0]
@@ -49,10 +56,7 @@ def update_db(sp):
     if not db_max_time:
         db_max_time = FIRST_DAY_SECONDS
 
-    sql = 'INSERT INTO scrobbles (utc, image_url, artist, album, name) VALUES (%s, %s, %s, %s, %s)'
-
     for t in range(db_max_time, int(time.time()), 86400):
-        db_additions = []
         result = requests.get(f"https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=benfry128&api_key={LAST_FM_API_KEY}&format=json&from={t}&to={t + 86400}&limit=200")
         tracks = result.json()['recenttracks']['track']
 
@@ -65,9 +69,85 @@ def update_db(sp):
         date_str = datetime.fromtimestamp(t).strftime('%m/%d/%Y')
         print(f'Collecting lastfm data around {date_str} ...Got {len(tracks)} tracks')
 
-        db_additions = [(track['date']['uts'], track['image'][3]['#text'], track['artist']['#text'], track['album']['#text'], track['name']) for track in tracks]
-        db_cursor.executemany(sql, db_additions)
-        DB.commit()
+        for track in tracks:
+            utc = int(track['date']['uts']) - 1
+            artist = track['artist']['#text']
+            album = track['album']['#text']
+            title = track['name']
+
+            utc_taken = True
+            while utc_taken:
+                utc += 1
+                db_cursor.execute(f'SELECT utc FROM scrobbles WHERE utc = "{utc}"')
+                utc_taken = db_cursor.fetchone()
+
+            bridge_code = get_bridge_code(title, artist, album)
+
+            db_cursor.execute(f'SELECT track_id FROM last_fm_str_tracks WHERE last_fm_str = "{bridge_code}"')
+            results = db_cursor.fetchone()
+
+            if results:
+                track_id = results[0]
+            else:
+                uri = None
+                possible_tracks = sp.search(q=f'track:{remove_apostrophe(title)} artist:{remove_apostrophe(artist)}', type='track', limit=5)['tracks']['items']
+                if possible_tracks:
+                    tries = 0
+                    for track in possible_tracks:
+                        possible_code = get_bridge_code(track['name'], track['artists'][0]['name'], track['album']['name'])
+                        if possible_code == bridge_code:
+                            if tries:
+                                print(f"got it on the {tries + 1}th try")
+                            uri = track['uri']
+                            title = track['name']
+                            artist = track['artists'][0]['name']
+                            album = track['album']['name']
+                            break
+                        tries += 1
+
+                if uri is None:
+                    print(f'Any ideas? Track is {title} by {artist} off {album}.')
+                    if possible_tracks:
+                        print("here are some possible tracks")
+                        for track in possible_tracks:
+                            print(f"{track['name']} by {track['artists'][0]['name']} off {track['album']['name']}. uri is {track['uri']}")
+                    while True:
+                        uri = input('\nIf you can find the song, enter the uri. If not, press enter. ')
+                        if not uri:
+                            break
+                        try:
+                            track = sp.track(uri)
+                        except Exception:
+                            print("Yeah that uri didn't work. Try again or press enter to go on")
+                            continue
+                        else:
+                            if input(f"You chose {track['name']} by {track['artists'][0]['name']} off {track['album']['name']} You good with this track?\nPress enter to accept or anything to reject "):
+                                print("Ok no go. Try again or press enter to go on")
+                                continue
+                            else:
+                                uri = track['uri']
+                                title = track['name']
+                                artist = track['artists'][0]['name']
+                                album = track['album']['name']
+                                break
+
+                if uri:
+                    db_cursor.execute(f'SELECT id FROM tracks WHERE spotify_uri = "{uri}"')
+                    results = db_cursor.fetchone()
+                    if results:
+                        track_id = results[0]
+                    else:
+                        db_cursor.execute('INSERT INTO tracks (name, artist, album, spotify_uri) VALUES (%s, %s, %s, %s)', (title, artist, album, uri))
+                        track_id = db_cursor.lastrowid
+                else:
+                    db_cursor.execute('INSERT INTO tracks (name, artist, album) VALUES (%s, %s, %s)', (title, artist, album))
+                    track_id = db_cursor.lastrowid
+                db_cursor.execute('INSERT INTO last_fm_str_tracks (last_fm_str, track_id) VALUES (%s, %s)', (bridge_code, track_id))
+
+            db_cursor.execute('INSERT INTO scrobbles (utc, track_id) VALUES (%s, %s)', (utc, track_id))
+
+            print(f'Just added ("{title}", "{artist}", "{album}"), utc was {utc}')
+            DB.commit()
 
 
 def getRecentTracks(start_days_back, end_days_back, sp):
