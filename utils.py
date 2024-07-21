@@ -150,6 +150,35 @@ def update_db(sp):
             print(f'Just added ("{title}", "{artist}", "{album}"), utc was {utc}')
             DB.commit()
 
+    # check for dupes
+    print('checking for duplicates now')
+
+    dupe_checks = ['SELECT utc FROM '
+                   '(SELECT utc, track_id, '
+                   'LEAD(track_id, 1, 0) OVER (ORDER BY utc) AS idAfter, '
+                   'LAG(track_id, 1, 0) OVER (ORDER BY utc) AS idBefore, '
+                   'LEAD(utc, 1, 0) OVER (ORDER BY utc) - utc AS timeAfter '
+                   'FROM scrobbles ORDER BY utc) t '
+                   'WHERE (idBefore = track_id OR idAfter = track_id) AND timeAfter < 60 AND timeAfter > 0;',
+                   'SELECT utc FROM '
+                   '(SELECT utc, track_id, '
+                   'LEAD(track_id, 1, 0) OVER (ORDER BY utc) AS idAfter, '
+                   'LAG(track_id, 1, 0) OVER (ORDER BY utc) AS idBefore, '
+                   '(LAG(utc, 1, 0) OVER (ORDER BY utc) - utc) * -1 AS timeBefore '
+                   'FROM scrobbles ORDER BY utc) t '
+                   'WHERE (idBefore = track_id OR idAfter = track_id) AND timeBefore < 60 AND timeBefore > 0;'
+                   ]
+
+    for dupe_check in dupe_checks:
+        db_cursor.execute(dupe_check)
+        dupes = [record[0] for record in db_cursor.fetchall()]
+        if dupes:
+            if not input(f'About to delete {len(dupes)} records, you good with that?') == '':
+                print("SKIPPED")
+                continue
+            db_cursor.execute(f'DELETE FROM scrobbles WHERE utc in ({str(dupes)[1:-1]})')
+            DB.commit()
+
 
 def getRecentTracks(start_days_back, end_days_back, sp):
     update_db(sp)
