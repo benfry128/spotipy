@@ -17,4 +17,4 @@ mydb = mysql.connector.connect(
 
 mycursor = mydb.cursor()
 
-utils.update_db(sp)
+print(utils.getRecentTracks(1, 1, sp))

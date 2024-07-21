@@ -183,15 +183,14 @@ def update_db(sp):
 def getRecentTracks(start_days_back, end_days_back, sp):
     update_db(sp)
 
-    sql = 'SELECT * FROM scrobbles WHERE utc > %s AND utc < %s'
+    sql = 'SELECT utc, name, artist, album FROM scrobbles INNER JOIN tracks ON id = track_id WHERE utc > %s AND utc < %s'
     db_cursor.execute(sql, ((int((time.time()-14400) / 86400) - start_days_back) * 86400 + 14400, (int((time.time()-14400) / 86400) - end_days_back + 1) * 86400 + 14400))
     recents_dicts = [
         {
             'utc': recent[0],
             'name': recent[1],
             'artist': recent[2],
-            'album': recent[3],
-            'image_url': recent[4]
+            'album': recent[3]
         } for recent in db_cursor.fetchall()
     ]
     return recents_dicts
