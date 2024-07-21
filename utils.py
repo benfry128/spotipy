@@ -180,6 +180,40 @@ def sanitize_db():
             db_cursor.execute(f'DELETE FROM scrobbles WHERE utc in ({str(dupes)[1:-1]})')
             DB.commit()
 
+    # gotta check for dupes in tracks as well
+    db_cursor.execute('SELECT name, artist FROM tracks GROUP BY name, artist HAVING COUNT(*) > 1')
+    for (track, artist) in db_cursor.fetchall():
+        print(f"Ok let's talk about {track} by {artist}")
+        db_cursor.execute('SELECT id, album, spotify_uri FROM tracks WHERE name = %s AND artist = %s', (track, artist))
+        dupe_records = db_cursor.fetchall()
+        for (id, album, uri) in dupe_records:
+            print(f"Off of {album}, uri is {uri}")
+
+        keep_id = input("Which one would you like to keep? (0-indexed, press enter to change nothing")
+        if keep_id:
+            good_track = dupe_records[int(keep_id)][0]
+            del dupe_records[int(keep_id)]
+            for dupe_record in dupe_records:
+                merge_tracks(good_track, dupe_record[0])
+
+
+def merge_tracks(good_track, bad_track):
+    # move all scrobbles from bad to good
+    db_cursor.execute(f'UPDATE scrobbles SET track_id = {good_track} WHERE track_id = {bad_track}')
+    # move all lastfm str records from bad to good
+    db_cursor.execute(f'UPDATE last_fm_str_tracks SET track_id = {good_track} WHERE track_id = {bad_track}')
+
+    db_cursor.execute(f'DELETE FROM tracks WHERE id = {bad_track}')
+
+    DB.commit()
+
+
+def delete_track(id):
+    db_cursor.execute(f'DELETE FROM scrobbles WHERE track_id = {id}')
+    db_cursor.execute(f'DELETE FROM last_fm_str_tracks WHERE track_id = {id}')
+    db_cursor.execute(f'DELETE FROM tracks WHERE id = {id}')
+    DB.commit()
+
 
 def getRecentTracks(start_days_back, end_days_back, sp):
     update_db(sp)

@@ -16,5 +16,3 @@ mydb = mysql.connector.connect(
 )
 
 mycursor = mydb.cursor()
-
-print(utils.getRecentTracks(1, 1, sp))
