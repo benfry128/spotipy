@@ -150,7 +150,8 @@ def update_db(sp):
             print(f'Just added ("{title}", "{artist}", "{album}"), utc was {utc}')
             DB.commit()
 
-    # check for dupes
+
+def sanitize_db():
     print('checking for duplicates now')
 
     dupe_checks = ['SELECT utc FROM '
