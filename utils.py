@@ -51,7 +51,7 @@ def update_db(sp):
 
     db_cursor.execute('SELECT MAX(utc) FROM scrobbles')
 
-    db_max_time = db_cursor.fetchone()[0]
+    db_max_time = db_cursor.fetchone()[0] + 1
 
     if not db_max_time:
         db_max_time = FIRST_DAY_SECONDS
@@ -63,7 +63,8 @@ def update_db(sp):
         if type(tracks) is dict:
             tracks = [tracks]
 
-        if sp.current_playback()['is_playing']:
+        playback = sp.current_playback()
+        if playback and playback['is_playing']:
             del tracks[0]  # every lastfm api call returns the currently playing track, so remove if currently playing
 
         date_str = datetime.fromtimestamp(t).strftime('%m/%d/%Y')
