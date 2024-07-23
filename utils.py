@@ -49,11 +49,12 @@ def update_db(sp):
     def remove_apostrophe(str):
         return re.sub("'", '', str).lower()
 
-    db_cursor.execute('SELECT MAX(utc) FROM scrobbles')
+    db_cursor.execute('SELECT MAX(utc) FROM scrobbles_clone')
 
-    db_max_time = db_cursor.fetchone()[0] + 1
-
-    if not db_max_time:
+    db_max_time = db_cursor.fetchone()[0]
+    if db_max_time:
+        db_max_time += 1
+    else:
         db_max_time = FIRST_DAY_SECONDS
 
     for t in range(db_max_time, int(time.time()), 86400):
@@ -90,6 +91,9 @@ def update_db(sp):
             if results:
                 track_id = results[0]
             else:
+                skip = input(f"skipping {bridge_code} ok?")
+                if not skip:
+                    continue
                 uri = None
                 possible_tracks = sp.search(q=f'track:{remove_apostrophe(title)} artist:{remove_apostrophe(artist)}', type='track', limit=5)['tracks']['items']
                 if possible_tracks:
@@ -145,7 +149,7 @@ def update_db(sp):
                     track_id = db_cursor.lastrowid
                 db_cursor.execute('INSERT INTO last_fm_str_tracks (last_fm_str, track_id) VALUES (%s, %s)', (bridge_code, track_id))
 
-            db_cursor.execute('INSERT INTO scrobbles (utc, track_id) VALUES (%s, %s)', (utc, track_id))
+            db_cursor.execute('INSERT INTO scrobbles_clone (utc, track_id) VALUES (%s, %s)', (utc, track_id))
 
             print(f'Just added ("{title}", "{artist}", "{album}"), utc was {utc}')
             DB.commit()
@@ -159,14 +163,14 @@ def sanitize_db():
                    'LEAD(track_id, 1, 0) OVER (ORDER BY utc) AS idAfter, '
                    'LAG(track_id, 1, 0) OVER (ORDER BY utc) AS idBefore, '
                    'LEAD(utc, 1, 0) OVER (ORDER BY utc) - utc AS timeAfter '
-                   'FROM scrobbles ORDER BY utc) t '
+                   'FROM scrobbles_clone ORDER BY utc) t '
                    'WHERE (idBefore = track_id OR idAfter = track_id) AND timeAfter < 60 AND timeAfter > 0;',
                    'SELECT utc FROM '
                    '(SELECT utc, track_id, '
                    'LEAD(track_id, 1, 0) OVER (ORDER BY utc) AS idAfter, '
                    'LAG(track_id, 1, 0) OVER (ORDER BY utc) AS idBefore, '
                    '(LAG(utc, 1, 0) OVER (ORDER BY utc) - utc) * -1 AS timeBefore '
-                   'FROM scrobbles ORDER BY utc) t '
+                   'FROM scrobbles_clone ORDER BY utc) t '
                    'WHERE (idBefore = track_id OR idAfter = track_id) AND timeBefore < 60 AND timeBefore > 0;'
                    ]
 
@@ -177,7 +181,7 @@ def sanitize_db():
             if not input(f'About to delete {len(dupes)} records, you good with that?') == '':
                 print("SKIPPED")
                 continue
-            db_cursor.execute(f'DELETE FROM scrobbles WHERE utc in ({str(dupes)[1:-1]})')
+            db_cursor.execute(f'DELETE FROM scrobbles_clone WHERE utc in ({str(dupes)[1:-1]})')
             DB.commit()
 
     # gotta check for dupes in tracks as well
