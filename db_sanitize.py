@@ -35,10 +35,10 @@ for dupe_check in dupe_checks:
 cursor.execute('SELECT name, artist FROM tracks GROUP BY name, artist HAVING COUNT(*) > 1')
 for (track, artist) in cursor.fetchall():
     print(f"Ok let's talk about {track} by {artist}")
-    cursor.execute('SELECT id, album, spotify_uri FROM tracks WHERE name = %s AND artist = %s', (track, artist))
+    cursor.execute('SELECT id, album, url FROM tracks WHERE name = %s AND artist = %s', (track, artist))
     dupe_records = cursor.fetchall()
-    for (id, album, uri) in dupe_records:
-        print(f"Off of {album}, uri is {uri}")
+    for (id, album, url) in dupe_records:
+        print(f"Off of {album}, url is {url}")
 
     keep_id = input("Which one would you like to keep? (0-indexed, press enter to change nothing")
     if keep_id:

@@ -96,26 +96,18 @@ def update_db(sp, db, cursor):
             if results:
                 track_id = results[0]
             else:
-                skip = input(f"skipping {bridge_code} ok?")
-                if not skip:
-                    continue
                 uri = None
                 possible_tracks = sp.search(q=f'track:{remove_apostrophe(title)} artist:{remove_apostrophe(artist)}', type='track', limit=5)['tracks']['items']
                 if possible_tracks:
-                    tries = 0
                     for track in possible_tracks:
-                        possible_code = get_bridge_code(track['name'], track['artists'][0]['name'], track['album']['name'])
-                        if possible_code == bridge_code:
-                            if tries:
-                                print(f"got it on the {tries + 1}th try")
+                        if bridge_code == get_bridge_code(track['name'], track['artists'][0]['name'], track['album']['name']):
                             uri = track['uri']
                             title = track['name']
                             artist = track['artists'][0]['name']
                             album = track['album']['name']
                             break
-                        tries += 1
 
-                if uri is None:
+                if not uri:
                     print(f'Any ideas? Track is {title} by {artist} off {album}.')
                     if possible_tracks:
                         print("here are some possible tracks")
@@ -135,19 +127,19 @@ def update_db(sp, db, cursor):
                                 print("Ok no go. Try again or press enter to go on")
                                 continue
                             else:
-                                uri = track['uri']
+                                url = track['external_urls']['spotify']
                                 title = track['name']
                                 artist = track['artists'][0]['name']
                                 album = track['album']['name']
                                 break
 
                 if uri:
-                    cursor.execute(f'SELECT id FROM tracks WHERE spotify_uri = "{uri}"')
+                    cursor.execute(f'SELECT id FROM tracks WHERE url = "{url}"')
                     results = cursor.fetchone()
                     if results:
                         track_id = results[0]
                     else:
-                        cursor.execute('INSERT INTO tracks (name, artist, album, spotify_uri) VALUES (%s, %s, %s, %s)', (title, artist, album, uri))
+                        cursor.execute('INSERT INTO tracks (name, artist, album, url) VALUES (%s, %s, %s, %s)', (title, artist, album, uri))
                         track_id = cursor.lastrowid
                 else:
                     cursor.execute('INSERT INTO tracks (name, artist, album) VALUES (%s, %s, %s)', (title, artist, album))
