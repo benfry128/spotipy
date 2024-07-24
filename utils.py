@@ -19,14 +19,6 @@ MYSQL_PWD = os.getenv('MYSQL_PWD')
 LAST_FM_FIRST_DAY = datetime(2024, 1, 2)
 FIRST_DAY_SECONDS = int(LAST_FM_FIRST_DAY.timestamp())
 
-DB = mysql.connector.connect(
-    host='localhost',
-    user='root',
-    password=MYSQL_PWD,
-    database='spotify_toolkit'
-)
-db_cursor = DB.cursor()
-
 
 def printDict(d):
     for key in d.keys():
@@ -50,20 +42,21 @@ def db_setup():
         password=MYSQL_PWD,
         database='spotify_toolkit'
     )
-    db_cursor = db.cursor()
-    return (db, db_cursor)
+    cursor = db.cursor()
+    return (db, cursor)
 
 
-def update_db(sp, db, db_cursor):
+def update_db(sp, db, cursor):
+
     def get_bridge_code(title, artist, album):
         return re.sub(r'\W+', '', title + artist + album).lower()
 
     def remove_apostrophe(str):
         return re.sub("'", '', str).lower()
 
-    db_cursor.execute('SELECT MAX(utc) FROM scrobbles')
+    cursor.execute('SELECT MAX(utc) FROM scrobbles')
 
-    db_max_time = db_cursor.fetchone()[0]
+    db_max_time = cursor.fetchone()[0]
     if db_max_time:
         db_max_time += 1
     else:
@@ -92,13 +85,13 @@ def update_db(sp, db, db_cursor):
             utc_taken = True
             while utc_taken:
                 utc += 1
-                db_cursor.execute(f'SELECT utc FROM scrobbles WHERE utc = "{utc}"')
-                utc_taken = db_cursor.fetchone()
+                cursor.execute(f'SELECT utc FROM scrobbles WHERE utc = "{utc}"')
+                utc_taken = cursor.fetchone()
 
             bridge_code = get_bridge_code(title, artist, album)
 
-            db_cursor.execute(f'SELECT track_id FROM last_fm_str_tracks WHERE last_fm_str = "{bridge_code}"')
-            results = db_cursor.fetchone()
+            cursor.execute(f'SELECT track_id FROM last_fm_str_tracks WHERE last_fm_str = "{bridge_code}"')
+            results = cursor.fetchone()
 
             if results:
                 track_id = results[0]
@@ -149,19 +142,19 @@ def update_db(sp, db, db_cursor):
                                 break
 
                 if uri:
-                    db_cursor.execute(f'SELECT id FROM tracks WHERE spotify_uri = "{uri}"')
-                    results = db_cursor.fetchone()
+                    cursor.execute(f'SELECT id FROM tracks WHERE spotify_uri = "{uri}"')
+                    results = cursor.fetchone()
                     if results:
                         track_id = results[0]
                     else:
-                        db_cursor.execute('INSERT INTO tracks (name, artist, album, spotify_uri) VALUES (%s, %s, %s, %s)', (title, artist, album, uri))
-                        track_id = db_cursor.lastrowid
+                        cursor.execute('INSERT INTO tracks (name, artist, album, spotify_uri) VALUES (%s, %s, %s, %s)', (title, artist, album, uri))
+                        track_id = cursor.lastrowid
                 else:
-                    db_cursor.execute('INSERT INTO tracks (name, artist, album) VALUES (%s, %s, %s)', (title, artist, album))
-                    track_id = db_cursor.lastrowid
-                db_cursor.execute('INSERT INTO last_fm_str_tracks (last_fm_str, track_id) VALUES (%s, %s)', (bridge_code, track_id))
+                    cursor.execute('INSERT INTO tracks (name, artist, album) VALUES (%s, %s, %s)', (title, artist, album))
+                    track_id = cursor.lastrowid
+                cursor.execute('INSERT INTO last_fm_str_tracks (last_fm_str, track_id) VALUES (%s, %s)', (bridge_code, track_id))
 
-            db_cursor.execute('INSERT INTO scrobbles (utc, track_id) VALUES (%s, %s)', (utc, track_id))
+            cursor.execute('INSERT INTO scrobbles (utc, track_id) VALUES (%s, %s)', (utc, track_id))
 
             print(f'Just added ("{title}", "{artist}", "{album}"), utc was {utc}')
             db.commit()
