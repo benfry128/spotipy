@@ -96,33 +96,29 @@ def update_db(sp, db, cursor):
             if results:
                 track_id = results[0]
             else:
-                uri = None
+                url = None
                 possible_tracks = sp.search(q=f'track:{remove_apostrophe(title)} artist:{remove_apostrophe(artist)}', type='track', limit=5)['tracks']['items']
                 if possible_tracks:
                     for track in possible_tracks:
                         if bridge_code == get_bridge_code(track['name'], track['artists'][0]['name'], track['album']['name']):
-                            uri = track['uri']
+                            url = track['external_urls']['spotify']
                             title = track['name']
                             artist = track['artists'][0]['name']
                             album = track['album']['name']
                             break
 
-                if not uri:
+                if not url:
                     print(f'Any ideas? Track is {title} by {artist} off {album}.')
                     if possible_tracks:
                         print("here are some possible tracks")
                         for track in possible_tracks:
-                            print(f"{track['name']} by {track['artists'][0]['name']} off {track['album']['name']}. uri is {track['uri']}")
+                            print(f"{track['name']} by {track['artists'][0]['name']} off {track['album']['name']}. uri is {track['external_urls']['spotify']}")
                     while True:
                         uri = input('\nIf you can find the song, enter the uri. If not, press enter. ')
                         if not uri:
                             break
-                        try:
+                        if url[0:30] == 'https://open.spotify.com/track':
                             track = sp.track(uri)
-                        except Exception:
-                            print("Yeah that uri didn't work. Try again or press enter to go on")
-                            continue
-                        else:
                             if input(f"You chose {track['name']} by {track['artists'][0]['name']} off {track['album']['name']} You good with this track?\nPress enter to accept or anything to reject "):
                                 print("Ok no go. Try again or press enter to go on")
                                 continue
@@ -142,8 +138,7 @@ def update_db(sp, db, cursor):
                         cursor.execute('INSERT INTO tracks (name, artist, album, url) VALUES (%s, %s, %s, %s)', (title, artist, album, uri))
                         track_id = cursor.lastrowid
                 else:
-                    cursor.execute('INSERT INTO tracks (name, artist, album) VALUES (%s, %s, %s)', (title, artist, album))
-                    track_id = cursor.lastrowid
+                    continue  # if they don't enter a uri, just skip to next track
                 cursor.execute('INSERT INTO last_fm_str_tracks (last_fm_str, track_id) VALUES (%s, %s)', (bridge_code, track_id))
 
             cursor.execute('INSERT INTO scrobbles (utc, track_id) VALUES (%s, %s)', (utc, track_id))

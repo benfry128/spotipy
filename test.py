@@ -10,7 +10,3 @@ sp = utils.spotipySetup()
 (db, cursor) = utils.db_setup()
 
 utils.update_db(sp, db, cursor)
-
-track = sp.track('https://open.spotify.com/track/5Yu2bToHMaZMqI1BNXZ9oV')
-
-print(track['external_urls'])
