@@ -69,14 +69,13 @@ def update_db(sp, db, cursor):
         if type(tracks) is dict:
             tracks = [tracks]
 
-        playback = sp.current_playback()
-        if playback and playback['is_playing']:
-            del tracks[0]  # every lastfm api call returns the currently playing track, so remove if currently playing
-
         date_str = datetime.fromtimestamp(t).strftime('%m/%d/%Y')
         print(f'Collecting lastfm data around {date_str} ...Got {len(tracks)} tracks')
 
         for track in tracks:
+            if '@attr' in track and 'nowplaying' in track['@attr'] and track['@attr']['nowplaying']:
+                continue
+
             utc = int(track['date']['uts']) - 1
             artist = track['artist']['#text']
             album = track['album']['#text']
@@ -96,6 +95,7 @@ def update_db(sp, db, cursor):
             if results:
                 track_id = results[0]
             else:
+                runtime = None
                 url = None
                 possible_tracks = sp.search(q=f'track:{remove_apostrophe(title)} artist:{remove_apostrophe(artist)}', type='track', limit=5)['tracks']['items']
                 if possible_tracks:
@@ -105,6 +105,8 @@ def update_db(sp, db, cursor):
                             title = track['name']
                             artist = track['artists'][0]['name']
                             album = track['album']['name']
+                            runtime = int(track['duration_ms'] / 1000)
+                            spotify_track = 1
                             break
 
                 if not url:
@@ -112,13 +114,16 @@ def update_db(sp, db, cursor):
                     if possible_tracks:
                         print("here are some possible tracks")
                         for track in possible_tracks:
-                            print(f"{track['name']} by {track['artists'][0]['name']} off {track['album']['name']}. uri is {track['external_urls']['spotify']}")
+                            print(f"{track['name']} by {track['artists'][0]['name']} off {track['album']['name']}. url is {track['external_urls']['spotify']}")
+                            cursor.execute(f'SELECT id FROM tracks WHERE url = "{track['external_urls']['spotify']}"')
+                            if cursor.fetchone():
+                                print("~~~~~~~~~~~~~~~~~~~~~~^THIS ONE HERE IS IN THE DB ALREADY^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
                     while True:
-                        uri = input('\nIf you can find the song, enter the uri. If not, press enter. ')
-                        if not uri:
+                        url = input('\nIf you can find the song, enter the url. If not, press enter. ')
+                        if not url:
                             break
                         if url[0:30] == 'https://open.spotify.com/track':
-                            track = sp.track(uri)
+                            track = sp.track(url)
                             if input(f"You chose {track['name']} by {track['artists'][0]['name']} off {track['album']['name']} You good with this track?\nPress enter to accept or anything to reject "):
                                 print("Ok no go. Try again or press enter to go on")
                                 continue
@@ -127,18 +132,23 @@ def update_db(sp, db, cursor):
                                 title = track['name']
                                 artist = track['artists'][0]['name']
                                 album = track['album']['name']
+                                runtime = int(track['duration_ms'] / 1000)
+                                spotify_track = 1
                                 break
+                        else:
+                            spotify_track = 0
+                            runtime = int(input("Runtime? "))
 
-                if uri:
+                if url:
                     cursor.execute(f'SELECT id FROM tracks WHERE url = "{url}"')
                     results = cursor.fetchone()
                     if results:
                         track_id = results[0]
                     else:
-                        cursor.execute('INSERT INTO tracks (name, artist, album, url) VALUES (%s, %s, %s, %s)', (title, artist, album, uri))
+                        cursor.execute('INSERT INTO tracks (name, artist, album, url, runtime, spotify_track) VALUES (%s, %s, %s, %s, %s, %s)', (title, artist, album, url, runtime, spotify_track))
                         track_id = cursor.lastrowid
                 else:
-                    continue  # if they don't enter a uri, just skip to next track
+                    continue  # if they don't enter a url, just skip to next track
                 cursor.execute('INSERT INTO last_fm_str_tracks (last_fm_str, track_id) VALUES (%s, %s)', (bridge_code, track_id))
 
             cursor.execute('INSERT INTO scrobbles (utc, track_id) VALUES (%s, %s)', (utc, track_id))
