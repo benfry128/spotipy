@@ -1,14 +1,14 @@
-from dotenv import load_dotenv
-import os
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth
-import requests
-from PIL import Image
 import io
+import mysql.connector
+import os
+import re
+import requests
+import spotipy
 import time
 from datetime import datetime
-import mysql.connector
-import re
+from dotenv import load_dotenv
+from PIL import Image
+from spotipy.oauth2 import SpotifyOAuth
 
 load_dotenv()
 LAST_FM_API_KEY = os.getenv('LAST_FM_API_KEY')
@@ -43,14 +43,25 @@ def spotipySetup():
                            retries=0)
 
 
-def update_db(sp):
+def db_setup():
+    db = mysql.connector.connect(
+        host='localhost',
+        user='root',
+        password=MYSQL_PWD,
+        database='spotify_toolkit'
+    )
+    db_cursor = db.cursor()
+    return (db, db_cursor)
+
+
+def update_db(sp, db, db_cursor):
     def get_bridge_code(title, artist, album):
         return re.sub(r'\W+', '', title + artist + album).lower()
 
     def remove_apostrophe(str):
         return re.sub("'", '', str).lower()
 
-    db_cursor.execute('SELECT MAX(utc) FROM scrobbles_clone')
+    db_cursor.execute('SELECT MAX(utc) FROM scrobbles')
 
     db_max_time = db_cursor.fetchone()[0]
     if db_max_time:
@@ -150,88 +161,42 @@ def update_db(sp):
                     track_id = db_cursor.lastrowid
                 db_cursor.execute('INSERT INTO last_fm_str_tracks (last_fm_str, track_id) VALUES (%s, %s)', (bridge_code, track_id))
 
-            db_cursor.execute('INSERT INTO scrobbles_clone (utc, track_id) VALUES (%s, %s)', (utc, track_id))
+            db_cursor.execute('INSERT INTO scrobbles (utc, track_id) VALUES (%s, %s)', (utc, track_id))
 
             print(f'Just added ("{title}", "{artist}", "{album}"), utc was {utc}')
-            DB.commit()
+            db.commit()
 
 
-def sanitize_db():
-    print('checking for duplicates now')
-
-    dupe_checks = ['SELECT utc FROM '
-                   '(SELECT utc, track_id, '
-                   'LEAD(track_id, 1, 0) OVER (ORDER BY utc) AS idAfter, '
-                   'LAG(track_id, 1, 0) OVER (ORDER BY utc) AS idBefore, '
-                   'LEAD(utc, 1, 0) OVER (ORDER BY utc) - utc AS timeAfter '
-                   'FROM scrobbles_clone ORDER BY utc) t '
-                   'WHERE (idBefore = track_id OR idAfter = track_id) AND timeAfter < 60 AND timeAfter > 0;',
-                   'SELECT utc FROM '
-                   '(SELECT utc, track_id, '
-                   'LEAD(track_id, 1, 0) OVER (ORDER BY utc) AS idAfter, '
-                   'LAG(track_id, 1, 0) OVER (ORDER BY utc) AS idBefore, '
-                   '(LAG(utc, 1, 0) OVER (ORDER BY utc) - utc) * -1 AS timeBefore '
-                   'FROM scrobbles_clone ORDER BY utc) t '
-                   'WHERE (idBefore = track_id OR idAfter = track_id) AND timeBefore < 60 AND timeBefore > 0;'
-                   ]
-
-    for dupe_check in dupe_checks:
-        db_cursor.execute(dupe_check)
-        dupes = [record[0] for record in db_cursor.fetchall()]
-        if dupes:
-            if not input(f'About to delete {len(dupes)} records, you good with that?') == '':
-                print("SKIPPED")
-                continue
-            db_cursor.execute(f'DELETE FROM scrobbles_clone WHERE utc in ({str(dupes)[1:-1]})')
-            DB.commit()
-
-    # gotta check for dupes in tracks as well
-    db_cursor.execute('SELECT name, artist FROM tracks GROUP BY name, artist HAVING COUNT(*) > 1')
-    for (track, artist) in db_cursor.fetchall():
-        print(f"Ok let's talk about {track} by {artist}")
-        db_cursor.execute('SELECT id, album, spotify_uri FROM tracks WHERE name = %s AND artist = %s', (track, artist))
-        dupe_records = db_cursor.fetchall()
-        for (id, album, uri) in dupe_records:
-            print(f"Off of {album}, uri is {uri}")
-
-        keep_id = input("Which one would you like to keep? (0-indexed, press enter to change nothing")
-        if keep_id:
-            good_track = dupe_records[int(keep_id)][0]
-            del dupe_records[int(keep_id)]
-            for dupe_record in dupe_records:
-                merge_tracks(good_track, dupe_record[0])
-
-
-def merge_tracks(good_track, bad_track):
+def merge_tracks(good_track, bad_track, db, cursor):
     # move all scrobbles from bad to good
-    db_cursor.execute(f'UPDATE scrobbles SET track_id = {good_track} WHERE track_id = {bad_track}')
+    cursor.execute(f'UPDATE scrobbles SET track_id = {good_track} WHERE track_id = {bad_track}')
     # move all lastfm str records from bad to good
-    db_cursor.execute(f'UPDATE last_fm_str_tracks SET track_id = {good_track} WHERE track_id = {bad_track}')
+    cursor.execute(f'UPDATE last_fm_str_tracks SET track_id = {good_track} WHERE track_id = {bad_track}')
 
-    db_cursor.execute(f'DELETE FROM tracks WHERE id = {bad_track}')
+    cursor.execute(f'DELETE FROM tracks WHERE id = {bad_track}')
 
-    DB.commit()
-
-
-def delete_track(id):
-    db_cursor.execute(f'DELETE FROM scrobbles WHERE track_id = {id}')
-    db_cursor.execute(f'DELETE FROM last_fm_str_tracks WHERE track_id = {id}')
-    db_cursor.execute(f'DELETE FROM tracks WHERE id = {id}')
-    DB.commit()
+    db.commit()
 
 
-def getRecentTracks(start_days_back, end_days_back, sp):
-    update_db(sp)
+def delete_track(id, db, cursor):
+    cursor.execute(f'DELETE FROM scrobbles WHERE track_id = {id}')
+    cursor.execute(f'DELETE FROM last_fm_str_tracks WHERE track_id = {id}')
+    cursor.execute(f'DELETE FROM tracks WHERE id = {id}')
+    db.commit()
+
+
+def getRecentTracks(start_days_back, end_days_back, sp, db, cursor):
+    update_db(sp, db, cursor)
 
     sql = 'SELECT utc, name, artist, album FROM scrobbles INNER JOIN tracks ON id = track_id WHERE utc > %s AND utc < %s'
-    db_cursor.execute(sql, ((int((time.time()-14400) / 86400) - start_days_back) * 86400 + 14400, (int((time.time()-14400) / 86400) - end_days_back + 1) * 86400 + 14400))
+    cursor.execute(sql, ((int((time.time()-14400) / 86400) - start_days_back) * 86400 + 14400, (int((time.time()-14400) / 86400) - end_days_back + 1) * 86400 + 14400))
     recents_dicts = [
         {
             'utc': recent[0],
             'name': recent[1],
             'artist': recent[2],
             'album': recent[3]
-        } for recent in db_cursor.fetchall()
+        } for recent in cursor.fetchall()
     ]
     return recents_dicts
 

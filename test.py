@@ -1,6 +1,5 @@
 import utils
 import os
-import mysql.connector
 
 MY_USER_ID = os.getenv('ME_SPOTIFY_ID')
 mysqlpwd = os.getenv('MYSQL_PWD')
@@ -8,11 +7,6 @@ mysqlpwd = os.getenv('MYSQL_PWD')
 
 sp = utils.spotipySetup()
 
-mydb = mysql.connector.connect(
-    host='localhost',
-    user='root',
-    password=mysqlpwd,
-    database='spotify_toolkit'
-)
+(db, cursor) = utils.db_setup()
 
-mycursor = mydb.cursor()
+utils.update_db(sp, db, cursor)
