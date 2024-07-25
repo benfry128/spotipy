@@ -4,4 +4,4 @@ sp = utils.spotipySetup()
 
 (db, cursor) = utils.db_setup()
 
-sp.track('3f4fc8c8unrQeKecmUPEDR')
+utils.merge_tracks(2437, 256, db, cursor)

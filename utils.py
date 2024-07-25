@@ -98,26 +98,23 @@ def update_db(sp, db, cursor):
                 runtime = None
                 url = None
                 possible_tracks = sp.search(q=f'track:{remove_apostrophe(title)} artist:{remove_apostrophe(artist)}', type='track', limit=5)['tracks']['items']
-                if possible_tracks:
-                    for track in possible_tracks:
-                        if bridge_code == get_bridge_code(track['name'], track['artists'][0]['name'], track['album']['name']):
-                            url = track['external_urls']['spotify']
-                            title = track['name']
-                            artist = track['artists'][0]['name']
-                            album = track['album']['name']
-                            runtime = int(track['duration_ms'] / 1000)
-                            spotify_track = 1
-                            break
+                for track in possible_tracks:
+                    if bridge_code == get_bridge_code(track['name'], track['artists'][0]['name'], track['album']['name']):
+                        url = track['external_urls']['spotify']
+                        title = track['name']
+                        artist = track['artists'][0]['name']
+                        album = track['album']['name']
+                        runtime = int(track['duration_ms'] / 1000)
+                        spotify_track = 1
+                        break
 
                 if not url:
-                    print(f'Any ideas? Track is {title} by {artist} off {album}.')
-                    if possible_tracks:
-                        print("here are some possible tracks")
-                        for track in possible_tracks:
-                            print(f"{track['name']} by {track['artists'][0]['name']} off {track['album']['name']}. url is {track['external_urls']['spotify']}")
-                            cursor.execute(f'SELECT id FROM tracks WHERE url = "{track['external_urls']['spotify']}"')
-                            if cursor.fetchone():
-                                print("~~~~~~~~~~~~~~~~~~~~~~^THIS ONE HERE IS IN THE DB ALREADY^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                    print(f'Any ideas? Track is {title} by {artist} off {album}. {"\nHere are some possible tracks" if possible_tracks else ""}')
+                    for track in possible_tracks:
+                        print(f"{track['name']} by {track['artists'][0]['name']} off {track['album']['name']}. url is {track['external_urls']['spotify']}")
+                        cursor.execute(f'SELECT id FROM tracks WHERE url = "{track['external_urls']['spotify']}"')
+                        if cursor.fetchone():
+                            print("~~~~~~~~~~~~~~~~~~~~~~^THIS ONE HERE IS IN THE DB ALREADY^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
                     while True:
                         url = input('\nIf you can find the song, enter the url. If not, press enter. ')
                         if not url:
@@ -158,14 +155,19 @@ def update_db(sp, db, cursor):
 
 
 def merge_tracks(good_track, bad_track, db, cursor):
-    # move all scrobbles from bad to good
-    cursor.execute(f'UPDATE scrobbles SET track_id = {good_track} WHERE track_id = {bad_track}')
-    # move all lastfm str records from bad to good
-    cursor.execute(f'UPDATE last_fm_str_tracks SET track_id = {good_track} WHERE track_id = {bad_track}')
+    cursor.execute('select name, artist from tracks where id in (%s, %s)', (good_track, bad_track))
 
-    cursor.execute(f'DELETE FROM tracks WHERE id = {bad_track}')
+    [(name1, artist1), (name2, artist2)] = cursor.fetchall()
 
-    db.commit()
+    if not input(f"About to merge {name1} by {artist1} with {name2} by {artist2}. Good?"):
+        # move all scrobbles from bad to good
+        cursor.execute(f'UPDATE scrobbles SET track_id = {good_track} WHERE track_id = {bad_track}')
+        # move all lastfm str records from bad to good
+        cursor.execute(f'UPDATE last_fm_str_tracks SET track_id = {good_track} WHERE track_id = {bad_track}')
+
+        cursor.execute(f'DELETE FROM tracks WHERE id = {bad_track}')
+
+        db.commit()
 
 
 def delete_track(id, db, cursor):
