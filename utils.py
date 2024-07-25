@@ -32,7 +32,7 @@ def spotipySetup():
                                                      redirect_uri="http://localhost:1234",
                                                      scope=scope),
                            requests_timeout=10,
-                           retries=0)
+                           retries=1)
 
 
 def db_setup():

@@ -4,4 +4,4 @@ sp = utils.spotipySetup()
 
 (db, cursor) = utils.db_setup()
 
-utils.update_db(sp, db, cursor)
+sp.track('3f4fc8c8unrQeKecmUPEDR')
