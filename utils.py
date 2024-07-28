@@ -5,7 +5,6 @@ import re
 import requests
 import spotipy
 import time
-from datetime import datetime
 from dotenv import load_dotenv
 from PIL import Image
 from spotipy.oauth2 import SpotifyOAuth
@@ -16,8 +15,13 @@ SPOTIFY_CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID')
 SPOTIFY_CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET')
 MYSQL_PWD = os.getenv('MYSQL_PWD')
 
-LAST_FM_FIRST_DAY = datetime(2024, 1, 2)
-FIRST_DAY_SECONDS = int(LAST_FM_FIRST_DAY.timestamp())
+
+def strip_str(string):
+    return re.sub(r'\W+', '', string).lower()
+
+
+def remove_apostrophe(string):
+    return re.sub("'", '', string).lower()
 
 
 def printDict(d):
@@ -44,140 +48,6 @@ def db_setup():
     )
     cursor = db.cursor()
     return (db, cursor)
-
-
-def update_db(sp, db, cursor):
-
-    def get_bridge_code(word):
-        return re.sub(r'\W+', '', word).lower()
-
-    def remove_apostrophe(str):
-        return re.sub("'", '', str).lower()
-
-    cursor.execute('SELECT url FROM albums')
-    album_urls = [row[0] for row in cursor.fetchall()]
-
-    cursor.execute('SELECT MAX(utc) FROM scrobbles')
-
-    db_max_time = cursor.fetchone()[0]
-    if db_max_time:
-        db_max_time += 1
-    else:
-        db_max_time = FIRST_DAY_SECONDS
-
-    for t in range(db_max_time, int(time.time()), 43200):
-        result = requests.get(f"https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=benfry128&api_key={LAST_FM_API_KEY}&format=json&from={t}&to={t + 43200}&limit=200")
-        tracks = result.json()['recenttracks']['track']
-
-        if type(tracks) is dict:
-            tracks = [tracks]
-
-        date_str = datetime.fromtimestamp(t).strftime('%m/%d/%Y')
-        print(f'Collecting lastfm data around {date_str} ...Got {len(tracks)} tracks')
-
-        if '@attr' in tracks[0] and 'nowplaying' in tracks[0]['@attr'] and tracks[0]['@attr']['nowplaying']:
-            del tracks[0]
-
-        sorted_tracks = sorted(tracks, key=(lambda d: int(d['date']['uts'])))
-
-        for t in sorted_tracks:
-            utc = int(t['date']['uts']) - 1
-            lfm_artist = t['artist']['#text']
-            lfm_album = t['album']['#text']
-            lfm_title = t['name']
-
-            if 'remaster' in lfm_title.lower():
-                print(f"Ok the current name for this track is {lfm_title}")
-                lfm_title = input("Please input a version of this that removes the 'remastered' part. Thanks! ")
-
-            print(utc)
-
-            utc_taken = True
-            while utc_taken:
-                utc += 1
-                cursor.execute(f'SELECT utc FROM scrobbles WHERE utc = "{utc}"')
-                utc_taken = cursor.fetchone()
-
-            bridge_code = get_bridge_code(lfm_title + lfm_artist + lfm_album)
-            shorter_bridge_code = get_bridge_code(lfm_title + lfm_artist)
-
-            cursor.execute(f'SELECT track_id FROM last_fm_str_tracks WHERE last_fm_str = "{bridge_code}"')
-            results = cursor.fetchone()
-
-            if results:
-                track_id = results[0]
-            else:
-                runtime = None
-                url = None
-                possible_tracks = sp.search(q=f'track:{remove_apostrophe(lfm_title)} artist:{remove_apostrophe(lfm_artist)}', type='track', limit=10)['tracks']['items']
-                for track in possible_tracks:  # @TODO: just delete tracks from the list that don't work and then let the person choose
-                    if (shorter_bridge_code == get_bridge_code(track['name'] + track['artists'][0]['name'])
-                        and (get_bridge_code(track['name'] + track['artists'][0]['name'])
-                             or input(f'Is it ok to substitute {track['album']['name']} for {lfm_album}'))):
-                        if not url or track['explicit'] or track['external_urls']['spotify'] in album_urls or album_explicit(sp.album(track['album']['external_urls']['spotify'])):
-                            url = track['external_urls']['spotify']
-                            title = track['name']
-                            artist = track['artists'][0]['name']
-                            album_url = track['album']['external_urls']['spotify']
-                            runtime = int(track['duration_ms'] / 1000)
-                            album_title = track['album']['name']
-                            album_type = track['album']['album_type']
-                            print(url)
-                            if album_url in album_urls:
-                                print("ok we're done here")
-                                break
-
-                if not url:
-                    print(f'Any ideas? Track is {lfm_title} by {lfm_artist} off {lfm_album}. {"\nHere are some possible tracks" if possible_tracks else ""}')
-                    for track in possible_tracks:
-                        print(f"{track['name']} by {track['artists'][0]['name']} off {track['album']['name']}. url is {track['external_urls']['spotify']}")
-                        if track['external_urls']['spotify'] in album_urls:
-                            print("\n~~~~~~~~~~~~~~~~~~~~~~~~~^PAY ATTENTION HERE, THIS ALBUM IS IN THE DB^~~~~~~~~~~~~~~~~")
-                    while True:
-                        url = input('\nIf you can find the song, enter the url. If not, press enter. ')
-                        if not url:
-                            break
-                        if url[0:30] == 'https://open.spotify.com/track':
-                            track = sp.track(url)
-                            if input(f"You chose {track['name']} by {track['artists'][0]['name']} off {track['album']['name']} You good with this track?\nPress enter to accept or anything to reject "):
-                                print("Ok no go. Try again or press enter to go on")
-                                continue
-                            else:
-                                title = track['name']
-                                artist = track['artists'][0]['name']
-                                album_url = track['album']['external_urls']['spotify']
-                                runtime = int(track['duration_ms'] / 1000)
-                                album_title = track['album']['name']
-                                album_type = track['album']['album_type']
-                                break
-                        else:
-                            title = lfm_title
-                            artist = lfm_artist
-                            runtime = int(input("Runtime? "))
-                            album_url = input("Album url? ")
-                            album_title = input("Album title? ")
-                            album_type = input("Album type? ")
-
-                if not url:
-                    continue  # if they don't enter a url, just skip to next track
-
-                cursor.execute(f'SELECT id FROM tracks WHERE url = "{url}"')
-                results = cursor.fetchone()
-                if results:
-                    track_id = results[0]
-                else:
-                    if album_url not in album_urls:
-                        cursor.execute('INSERT INTO albums (url, title, type) VALUES (%s, %s, %s)', (album_url, album_title, album_type))
-                        album_urls.append(album_url)
-                    cursor.execute('INSERT INTO tracks (name, artist, album, url, runtime) VALUES (%s, %s, %s, %s, %s)', (title, artist, album_url, url, runtime))
-                    track_id = cursor.lastrowid
-
-                cursor.execute('INSERT INTO last_fm_str_tracks (last_fm_str, track_id) VALUES (%s, %s)', (bridge_code, track_id))
-
-            cursor.execute('INSERT INTO scrobbles (utc, track_id) VALUES (%s, %s)', (utc, track_id))
-
-            print(f'Just added ("{lfm_title}", "{lfm_artist}", "{lfm_album}"), utc was {utc}')
-            db.commit()
 
 
 def merge_tracks(good_track, bad_track, db, cursor):
