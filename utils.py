@@ -54,6 +54,11 @@ def update_db(sp, db, cursor):
     def remove_apostrophe(str):
         return re.sub("'", '', str).lower()
 
+    cursor.execute('SELECT url FROM albums')
+    album_urls = [row[0] for row in cursor.fetchall()]
+    print(album_urls[0:5])
+    input("HI")
+
     cursor.execute('SELECT MAX(utc) FROM scrobbles')
 
     db_max_time = cursor.fetchone()[0]
@@ -267,3 +272,35 @@ def compile_image(to_a_side, size, image_urls):
         del response
 
     bigImage.show()
+
+
+def sp_tracks(sp, cursor):
+    cursor.execute("select url from tracks where url like '%spotify%'")
+
+    tracks = [row[0] for row in cursor.fetchall()]
+    sp_tracks = []
+
+    for i in range(0, len(tracks), 50):
+        sp_tracks.extend(sp.tracks(tracks[i:i+50])['tracks'])
+        print(len(sp_tracks))
+
+    return sp_tracks
+
+
+def sp_albums(sp, cursor):
+    cursor.execute("SELECT url FROM albums where url like '%spotify%';")
+
+    albums = [row[0] for row in cursor.fetchall()]
+    sp_albums = []
+
+    for i in range(0, len(albums), 20):
+        sp_albums.extend(sp.albums(albums[i:i+20])['albums'])
+        print(f'{len(sp_albums)} albums loaded from Spotify so far')
+
+    return sp_albums
+
+
+def album_explicit(sp_album):
+    tracks_explicit = bool([1 for track in sp_album['tracks']['items'] if track['explicit']])
+
+    return tracks_explicit

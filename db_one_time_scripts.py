@@ -136,3 +136,22 @@ def add_runtime_and_spotify_track_to_tracks_but_also_I_changed_it_so_it_adds_alb
             if not cursor.fetchone():
                 cursor.execute('INSERT INTO albums (url, title, type) VALUES (%s, %s, %s)', (url, name, album_type))
             db.commit()
+
+
+def swap_out_clean_versions_of_albums(sp, db, cursor):
+    sp_albums = utils.sp_albums(sp, cursor)
+
+    for sp_album in sp_albums:
+        if not utils.album_explicit(sp_album):
+            print(f'Album {sp_album['name']} is clean')
+            title = sp_album['name']
+            artist = sp_album['artists'][0]['name']
+            other_versions = sp.search(f'album:{title} artist:{artist}', limit=5, type='album')['albums']['items']
+            if type(other_versions) is list:
+                for album in other_versions:
+                    if not album['external_urls']['spotify'] == sp_album['external_urls']['spotify'] and album['name'] == sp_album['name']:
+                        print(album['external_urls']['spotify'])
+                        if not input('Maybe this one would be better?'):
+                            cursor.execute('insert into albums (url, title, type) values (%s, %s, %s)', [album['external_urls']['spotify'], album['name'], album['album_type']])
+                            cursor.execute('update tracks set album = %s where album = %s', [album['external_urls']['spotify'], sp_album['external_urls']['spotify']])
+                            db.commit()
