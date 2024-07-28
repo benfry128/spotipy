@@ -102,8 +102,9 @@ def update_db(sp, db, cursor):
             else:
                 runtime = None
                 url = None
-                possible_tracks = sp.search(q=f'track:{remove_apostrophe(title)} artist:{remove_apostrophe(artist)}', type='track', limit=5)['tracks']['items']
+                possible_tracks = sp.search(q=f'track:{remove_apostrophe(title)} artist:{remove_apostrophe(artist)}', type='track', limit=10)['tracks']['items']
                 for track in possible_tracks:
+                    # check if
                     if bridge_code == get_bridge_code(track['name'], track['artists'][0]['name'], track['album']['name']):
                         url = track['external_urls']['spotify']
                         title = track['name']
