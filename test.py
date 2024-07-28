@@ -16,8 +16,6 @@ lambdas = [
     lambda b: b['male']
 ]
 
-url = 
-
 for lam in lambdas:
     for obj in dicts:
         if lam(obj):

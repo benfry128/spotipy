@@ -1,18 +1,25 @@
-import utils
+import time
+import requests
+from utils import album_explicit, db_setup, LAST_FM_API_KEY, remove_apostrophe, spotipySetup, strip_str
 from datetime import datetime
 
-sp = utils.spotipySetup()
+sp = spotipySetup()
 
-(db, cursor) = utils.db_setup()
+(db, cursor) = db_setup()
 
 # save album_urls for checking later
 cursor.execute('SELECT url FROM albums')
 album_urls = [row[0] for row in cursor.fetchall()]
 
+# save last_fm_str_tracks for checking later
+cursor.execute('SELECT * FROM last_FM_str_tracks;')
+last_fm_str_dict = {row[0]: row[1] for row in cursor.fetchall()}
+
 # get max utc in db to determine where to start pulling recents from lastfm
 cursor.execute('SELECT MAX(utc) FROM scrobbles')
 db_max_time = cursor.fetchone()[0]
-start_time = db_max_time + 1 if db_max_time else int(datetime(2024, 1, 2).timestamp()) # if db empty, start on 1/2/2024
+start_time = db_max_time + 1 if db_max_time else int(datetime(2024, 1, 2).timestamp())  # if db empty, start on 1/2/2024
+last_added_utc = start_time
 
 for seconds in range(start_time, int(time.time()), 43200):
     result = requests.get(f"https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=benfry128&api_key={LAST_FM_API_KEY}&format=json&from={seconds}&to={seconds + 43200}&limit=200")
@@ -21,18 +28,21 @@ for seconds in range(start_time, int(time.time()), 43200):
     if type(tracks) is dict:
         tracks = [tracks]
 
-    date_str = datetime.fromtimestamp(t).strftime('%m/%d/%Y')
+    date_str = datetime.fromtimestamp(seconds).strftime('%m/%d/%Y')
     print(f'Collecting lastfm data around {date_str} ...Got {len(tracks)} tracks')
 
     # remove first track if it's a now-playing track
     if '@attr' in tracks[0] and 'nowplaying' in tracks[0]['@attr'] and tracks[0]['@attr']['nowplaying']:
         del tracks[0]
 
-    # sort tracks by utc to 
+    # sort tracks by utc to ensure that tracks aren't missed if the script errors out
     sorted_tracks = sorted(tracks, key=(lambda d: int(d['date']['uts'])))
 
     for track in sorted_tracks:
-        utc = int(track['date']['uts']) - 1
+        utc = int(track['date']['uts'])
+        if utc <= last_added_utc:
+            utc = last_added_utc + 1
+
         lfm_artist = track['artist']['#text']
         lfm_album = track['album']['#text']
         lfm_title = track['name']
@@ -41,32 +51,21 @@ for seconds in range(start_time, int(time.time()), 43200):
             print(f"Ok the current name for this track is {lfm_title}")
             lfm_title = input("Please input a version of this that removes the 'remastered' part. Thanks! ")
 
-        utc_taken = True
-        while utc_taken:
-            utc += 1
-            cursor.execute(f'SELECT utc FROM scrobbles WHERE utc = "{utc}"')
-            utc_taken = cursor.fetchone()
-
         bridge_code = strip_str(lfm_title + lfm_artist + lfm_album)
-        shorter_bridge_code = strip_str(lfm_title + lfm_artist)
 
-        cursor.execute(f'SELECT track_id FROM last_fm_str_tracks WHERE last_fm_str = "{bridge_code}"')
-        results = cursor.fetchone()
-
-        if results:
-            track_id = results[0]
+        if bridge_code in last_fm_str_dict:
+            track_id = last_fm_str_dict[bridge_code]
         else:
-            runtime = None
             url = None
             possible_tracks = sp.search(q=f'track:{remove_apostrophe(lfm_title)} artist:{remove_apostrophe(lfm_artist)}', type='track', limit=10)['tracks']['items']
-            
+
             for track in possible_tracks:  # @TODO: just delete tracks from the list that don't work and then let the person choose
-                if 
-
-
+                
+                
+                
                 if (shorter_bridge_code == strip_str(track['name'] + track['artists'][0]['name'])
                     and (strip_str(track['name'] + track['artists'][0]['name'])
-                            or input(f'Is it ok to substitute {track['album']['name']} for {lfm_album}'))):
+                         or input(f'Is it ok to substitute {track['album']['name']} for {lfm_album}'))):
                     if not url or track['explicit'] or track['external_urls']['spotify'] in album_urls or album_explicit(sp.album(track['album']['external_urls']['spotify'])):
                         url = track['external_urls']['spotify']
                         title = track['name']
@@ -128,6 +127,7 @@ for seconds in range(start_time, int(time.time()), 43200):
             cursor.execute('INSERT INTO last_fm_str_tracks (last_fm_str, track_id) VALUES (%s, %s)', (bridge_code, track_id))
 
         cursor.execute('INSERT INTO scrobbles (utc, track_id) VALUES (%s, %s)', (utc, track_id))
+        last_added_utc = utc
 
         print(f'Just added ("{lfm_title}", "{lfm_artist}", "{lfm_album}"), utc was {utc}')
         db.commit()

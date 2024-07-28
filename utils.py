@@ -74,8 +74,6 @@ def delete_track(id, db, cursor):
 
 
 def getRecentTracks(start_days_back, end_days_back, sp, db, cursor):
-    update_db(sp, db, cursor)
-
     sql = 'SELECT utc, name, artist, album FROM scrobbles INNER JOIN tracks ON id = track_id WHERE utc > %s AND utc < %s'
     cursor.execute(sql, ((int((time.time()-14400) / 86400) - start_days_back) * 86400 + 14400, (int((time.time()-14400) / 86400) - end_days_back + 1) * 86400 + 14400))
     recents_dicts = [
