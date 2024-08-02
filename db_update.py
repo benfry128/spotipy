@@ -19,7 +19,6 @@ SEARCH_PRIORITES = [
 
 def search_spotify_tracks(sp_tracks):
     for prio in SEARCH_PRIORITES:
-        print('Checking prios now')
         for sp_track in sp_tracks:
             if prio(sp_track) and (strip_str(sp_track['name'] + sp_track['artists'][0]['name'] + sp_track['album']['name']) == bridge_code
                                    or not input(f'Is this ok? {sp_track['name']} by {sp_track['artists'][0]['name']} off of {sp_track['album']['name']}')):
@@ -52,7 +51,7 @@ for seconds in range(start_time, int(time.time()), 43200):
     print(f'Collecting lastfm data around {date_str} ...Got {len(tracks)} tracks')
 
     # remove first track if it's a now-playing track
-    if '@attr' in tracks[0] and 'nowplaying' in tracks[0]['@attr'] and tracks[0]['@attr']['nowplaying']:
+    if tracks and '@attr' in tracks[0] and 'nowplaying' in tracks[0]['@attr'] and tracks[0]['@attr']['nowplaying']:
         del tracks[0]
 
     # sort tracks by utc to ensure that tracks aren't missed if the script errors out
@@ -105,6 +104,7 @@ for seconds in range(start_time, int(time.time()), 43200):
                 runtime = int(good_track['duration_ms'] / 1000)
                 album_title = good_track['album']['name']
                 album_type = good_track['album']['album_type']
+                url = good_track['external_urls']['spotify']
 
             cursor.execute(f'SELECT id FROM tracks WHERE url = "{url}"')
             results = cursor.fetchone()

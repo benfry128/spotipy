@@ -5,19 +5,8 @@ sp = utils.spotipySetup()
 (db, cursor) = utils.db_setup()
 
 
-dicts = [
-    {'name': 'ben', 'age': 15, 'male': True},
-    {'name': 'caleb', 'age': 17, 'male': True},
-    {'name': 'christine', 'age': 16, 'male': False}
-]
+results = sp.current_user_recently_played(limit=50, before=1722285562608)
+print(results['next'])
 
-lambdas = [
-    lambda b: b['name'] == 'caleb',
-    lambda b: b['male']
-]
-
-for lam in lambdas:
-    for obj in dicts:
-        if lam(obj):
-            print(obj)
-            break
+for item in results['items']:
+    print(item['track']['name'])
