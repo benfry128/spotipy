@@ -45,4 +45,4 @@ for (track, artist) in cursor.fetchall():
         good_track = dupe_records[int(keep_id)][0]
         del dupe_records[int(keep_id)]
         for dupe_record in dupe_records:
-            utils.merge_tracks(good_track, dupe_record[0])
+            utils.merge_tracks(good_track, dupe_record[0], db, cursor)

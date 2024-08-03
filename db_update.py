@@ -17,10 +17,10 @@ SEARCH_PRIORITES = [
 ]
 
 
-def search_spotify_tracks(sp_tracks):
+def search_spotify_tracks(sp_tracks, bridge_codes):
     for prio in SEARCH_PRIORITES:
         for sp_track in sp_tracks:
-            if prio(sp_track) and (strip_str(sp_track['name'] + sp_track['artists'][0]['name'] + sp_track['album']['name']) == bridge_code
+            if prio(sp_track) and (strip_str(sp_track['name'] + sp_track['artists'][0]['name'] + sp_track['album']['name']) in bridge_codes
                                    or not input(f'Is this ok? {sp_track['name']} by {sp_track['artists'][0]['name']} off of {sp_track['album']['name']}')):
                 return sp_track
     return None
@@ -67,17 +67,21 @@ for seconds in range(start_time, int(time.time()), 43200):
         lfm_title = track['name']
         print(f'Searching for {lfm_title} by {lfm_artist} off of {lfm_album}.')
 
-        bridge_code = strip_str(lfm_title + lfm_artist + lfm_album)
+        bridge_codes = [strip_str(lfm_title + lfm_artist + lfm_album)]
+        remove_comma_from_artist = lfm_artist
+        while ', ' in remove_comma_from_artist:
+            remove_comma_from_artist = remove_comma_from_artist[0:remove_comma_from_artist.rindex(', ')]
+            bridge_codes.append(strip_str(lfm_title + remove_comma_from_artist + lfm_album))
 
-        if bridge_code in last_fm_str_dict:
-            track_id = last_fm_str_dict[bridge_code]
+        if bridge_codes[0] in last_fm_str_dict:
+            track_id = last_fm_str_dict[bridge_codes[0]]
         else:
             if 'remaster' in lfm_title.lower():
                 lfm_title = input("Please input a version of this that removes the 'remastered' part. Thanks! ")
 
-            sp_tracks = sp.search(q=f'track:{remove_apostrophe(lfm_title)} artist:{remove_apostrophe(lfm_artist)}', type='track', limit=10)['tracks']['items']
+            sp_tracks = sp.search(q=f'track:{remove_apostrophe(lfm_title)} artist:{remove_apostrophe(remove_comma_from_artist)}', type='track', limit=10)['tracks']['items']
 
-            good_track = search_spotify_tracks(sp_tracks)
+            good_track = search_spotify_tracks(sp_tracks, bridge_codes)
 
             if not good_track:
                 print(f'Any ideas? Track is {lfm_title} by {lfm_artist} off {lfm_album}. {"\nHere are some possible tracks" if sp_tracks else ""}')
@@ -96,7 +100,6 @@ for seconds in range(start_time, int(time.time()), 43200):
                     album_title = input("Album title? ")
                     album_type = input("Album type? ")
 
-            input("HI")
             if good_track:
                 title = good_track['name']
                 artist = good_track['artists'][0]['name']
@@ -118,8 +121,8 @@ for seconds in range(start_time, int(time.time()), 43200):
                 input(f'Adding {title} by {artist} off {album_title}. Press Ctrl-C now if this is a mistake')
                 track_id = cursor.lastrowid
 
-            cursor.execute('INSERT INTO last_fm_str_tracks (last_fm_str, track_id) VALUES (%s, %s)', (bridge_code, track_id))
-            last_fm_str_dict[bridge_code] = track_id
+            cursor.execute('INSERT INTO last_fm_str_tracks (last_fm_str, track_id) VALUES (%s, %s)', (bridge_codes[0], track_id))
+            last_fm_str_dict[bridge_codes[0]] = track_id
 
         cursor.execute('INSERT INTO scrobbles (utc, track_id) VALUES (%s, %s)', (utc, track_id))
         last_added_utc = utc

@@ -4,9 +4,13 @@ sp = utils.spotipySetup()
 
 (db, cursor) = utils.db_setup()
 
+x = 'Tyler, The Creator'
+y = 'Dreamville, JID, EARTHGANG'
 
-results = sp.current_user_recently_played(limit=50, before=1722285562608)
-print(results['next'])
+bridge_codes = [y]
+remove_comma_from_artist = y
+while ', ' in remove_comma_from_artist:
+    remove_comma_from_artist = remove_comma_from_artist[0:remove_comma_from_artist.rindex(', ')]
+    bridge_codes.append(remove_comma_from_artist)
 
-for item in results['items']:
-    print(item['track']['name'])
+print(bridge_codes)
