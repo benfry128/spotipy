@@ -1,5 +1,6 @@
 import utils
 import os
+from pprint import pprint
 
 sp = utils.spotipySetup()
 
@@ -35,7 +36,7 @@ for playlist in playlists:
                 artists[artist_uri] += 1
             else:
                 artists[artist_uri] = 1
-    utils.printDict(artists)
+    pprint(artists)
 
 sorted_artists = sorted(artists, key=artists.get, reverse=True)
 

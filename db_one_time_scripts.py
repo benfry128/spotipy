@@ -1,4 +1,5 @@
 import utils
+from pprint import pprint
 
 
 def merge_albums(urls, sp, db, cursor):
@@ -59,7 +60,7 @@ def add_albums_to_non_spotify_tracks(sp, db, cursor):
         print(album[0])
 
         sp_album = sp.album(album[0])
-        utils.printDict(sp_album)
+        pprint(sp_album)
         input("HI")
         url = input("URL? ")
         a_type = input("type? ")
