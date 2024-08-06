@@ -13,7 +13,7 @@ SEARCH_PRIORITES = [
     lambda track: album_explicit(sp.album(track['album']['uri'])) and track['album']['album_type'] == 'album',
     lambda track: track['explicit'],
     lambda track: album_explicit(sp.album(track['album']['uri'])),
-    lambda track: True,
+    lambda _: True,
 ]
 
 
@@ -27,7 +27,7 @@ def search_spotify_tracks(sp_tracks, bridge_codes):
 
 
 # save album_urls for checking later
-cursor.execute('SELECT url FROM albums')
+cursor.execute('SELECT url FROM albums ORDER BY id')
 album_urls = [row[0] for row in cursor.fetchall()]
 
 # save last_fm_str_tracks for checking later
@@ -114,10 +114,13 @@ for seconds in range(start_time, int(time.time()), 43200):
             if results:
                 track_id = results[0]
             else:
-                if album_url not in album_urls:
-                    cursor.execute('INSERT INTO albums (url, title, type) VALUES (%s, %s, %s)', (album_url, album_title, album_type))
+                if album_url in album_urls:
+                    album_id = album_urls.index(album_url) + 1
+                else:
+                    cursor.execute('INSERT INTO albums (url, name, type) VALUES (%s, %s, %s)', (album_url, album_title, album_type))
                     album_urls.append(album_url)
-                cursor.execute('INSERT INTO tracks (name, artist, album, url, runtime) VALUES (%s, %s, %s, %s, %s)', (title, artist, album_url, url, runtime))
+                    album_id = len(album_urls)
+                cursor.execute('INSERT INTO tracks (name, artist, album_id, url, runtime) VALUES (%s, %s, %s, %s, %s)', (title, artist, album_id, url, runtime))
                 input(f'Adding {title} by {artist} off {album_title}. Press Ctrl-C now if this is a mistake')
                 track_id = cursor.lastrowid
 

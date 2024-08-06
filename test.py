@@ -4,13 +4,11 @@ sp = utils.spotipySetup()
 
 (db, cursor) = utils.db_setup()
 
-x = 'Tyler, The Creator'
-y = 'Dreamville, JID, EARTHGANG'
+cursor.execute('SELECT id, url FROM albums')
+album_urls = [(row[0], row[1]) for row in cursor.fetchall()]
 
-bridge_codes = [y]
-remove_comma_from_artist = y
-while ', ' in remove_comma_from_artist:
-    remove_comma_from_artist = remove_comma_from_artist[0:remove_comma_from_artist.rindex(', ')]
-    bridge_codes.append(remove_comma_from_artist)
+print(album_urls[0:10])
 
-print(bridge_codes)
+for (id, url) in album_urls:
+    cursor.execute('update tracks set album = %s where album = %s', (id, url))
+    db.commit()
