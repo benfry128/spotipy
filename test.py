@@ -24,7 +24,7 @@ for row in result:
             cursor.execute('INSERT INTO artists (name, url) VALUES (%s, %s)', (input(f"WHO's this artist? {url}"), url))
             artist_urls.append(url)
             artist_id = len(artist_urls)
-        cursor.execute('INSERT INTO tracks_artists (track_id, artist_id, pri) VALUES (%s, %s, %s)', (row[0], artist_id, 0))
+        cursor.execute('INSERT INTO tracks_artists (track_id, artist_id, main) VALUES (%s, %s, %s)', (row[0], artist_id, 0))
         db.commit()
         url = input("url? ")
 

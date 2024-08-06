@@ -30,6 +30,12 @@ def search_spotify_tracks(sp_tracks, bridge_codes):
 cursor.execute('SELECT url FROM albums ORDER BY id')
 album_urls = [row[0] for row in cursor.fetchall()]
 
+cursor.execute('select url from artists order by id')
+artist_urls = [row[0] for row in cursor.fetchall()]
+
+cursor.execute('ALTER TABLE albums AUTO_INCREMENT = %s', len(album_urls) + 1)
+cursor.execute('ALTER TABLE artists AUTO_INCREMENT = %s', len(artist_urls) + 1)
+
 # save last_fm_str_tracks for checking later
 cursor.execute('SELECT * FROM last_FM_str_tracks;')
 last_fm_str_dict = {row[0]: row[1] for row in cursor.fetchall()}
@@ -82,6 +88,8 @@ for seconds in range(start_time, int(time.time()), 43200):
             sp_tracks = sp.search(q=f'track:{remove_apostrophe(lfm_title)} artist:{remove_apostrophe(remove_comma_from_artist)}', type='track', limit=10)['tracks']['items']
 
             good_track = search_spotify_tracks(sp_tracks, bridge_codes)
+            # uncomment this if you Quit out of adding a track because it is bad
+            # good_track = False
 
             if not good_track:
                 print(f'Any ideas? Track is {lfm_title} by {lfm_artist} off {lfm_album}. {"\nHere are some possible tracks" if sp_tracks else ""}')
@@ -94,7 +102,11 @@ for seconds in range(start_time, int(time.time()), 43200):
                     good_track = sp.track(url)
                 else:
                     title = lfm_title
-                    artist = lfm_artist
+                    artists = [{'name': lfm_artist, 'url': input(f'Input URL of artist "{lfm_artist}"')}]
+                    additional_artist_name = input("Other artists? Add name here: ")
+                    while additional_artist_name:
+                        artists.append({'name': additional_artist_name, 'url': input("Give the URL of that artist pls: ")})
+                        additional_artist_name = input("Other artists? Add name here: ")
                     runtime = int(input("Runtime? "))
                     album_url = input("Album url? ")
                     album_title = input("Album title? ")
@@ -102,7 +114,7 @@ for seconds in range(start_time, int(time.time()), 43200):
 
             if good_track:
                 title = good_track['name']
-                artist = good_track['artists'][0]['name']
+                artists = [{'name': artist['name'], 'url': artist['external_urls']['spotify']} for artist in good_track['artists']]
                 album_url = good_track['album']['external_urls']['spotify']
                 runtime = int(good_track['duration_ms'] / 1000)
                 album_title = good_track['album']['name']
@@ -114,15 +126,27 @@ for seconds in range(start_time, int(time.time()), 43200):
             if results:
                 track_id = results[0]
             else:
+                input(f'Adding {title} by {artists[0]['name']} off {album_title}. Press Ctrl-C now if this is a mistake')
                 if album_url in album_urls:
                     album_id = album_urls.index(album_url) + 1
                 else:
                     cursor.execute('INSERT INTO albums (url, name, type) VALUES (%s, %s, %s)', (album_url, album_title, album_type))
                     album_urls.append(album_url)
                     album_id = len(album_urls)
-                cursor.execute('INSERT INTO tracks (name, artist, album_id, url, runtime) VALUES (%s, %s, %s, %s, %s)', (title, artist, album_id, url, runtime))
-                input(f'Adding {title} by {artist} off {album_title}. Press Ctrl-C now if this is a mistake')
+                cursor.execute('INSERT INTO tracks (name, album_id, url, runtime) VALUES (%s, %s, %s, %s)', (title, album_id, url, runtime))
                 track_id = cursor.lastrowid
+
+                primary = 1
+                for artist in artists:
+                    url = artist['url']
+                    if url in artist_urls:
+                        artist_id = artist_urls.index(url) + 1
+                    else:
+                        cursor.execute('INSERT INTO artists (name, url) VALUES (%s, %s)', (artist['name'], url))
+                        artist_urls.append(url)
+                        artist_id = len(artist_urls)
+                    cursor.execute('INSERT INTO tracks_artists (track_id, artist_id, main) VALUES (%s, %s, %s)', (track_id, artist_id, primary))
+                    primary = 0
 
             cursor.execute('INSERT INTO last_fm_str_tracks (last_fm_str, track_id) VALUES (%s, %s)', (bridge_codes[0], track_id))
             last_fm_str_dict[bridge_codes[0]] = track_id
