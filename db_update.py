@@ -101,8 +101,10 @@ for seconds in range(start_time, int(time.time()), 43200):
                 elif url[0:30] == 'https://open.spotify.com/track':
                     good_track = sp.track(url)
                 else:
-                    title = lfm_title
-                    artists = [{'name': lfm_artist, 'url': input(f'Input URL of artist "{lfm_artist}"')}]
+                    corrected_title = input("If the title is wrong, put it in correctly here: ")
+                    title = corrected_title if corrected_title else lfm_title
+                    corrected_artist = input("If the artist's name is wrong, put it in correctly here: ")
+                    artists = [{'name': corrected_artist if corrected_artist else lfm_artist, 'url': input(f'Input URL of artist "{lfm_artist}"')}]
                     additional_artist_name = input("Other artists? Add name here: ")
                     while additional_artist_name:
                         artists.append({'name': additional_artist_name, 'url': input("Give the URL of that artist pls: ")})
