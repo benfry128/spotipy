@@ -1,32 +1,34 @@
 import utils
+from db_one_time_scripts import merge_albums
 
 sp = utils.spotipySetup()
 
 (db, cursor) = utils.db_setup()
 
+merge_albums(['https://open.spotify.com/album/3stadz88XVpHcXnVYMHc4J', 'https://open.spotify.com/album/39WmCBKGptRLti86qxZAVc'], sp, db, cursor)
 # sp_tracks = utils.sp_tracks(sp, cursor)
 
 # print(sp_tracks[0])
 
-cursor.execute('select url from artists order by id')
-artist_urls = [row[0] for row in cursor.fetchall()]
+# cursor.execute('select url from artists order by id')
+# artist_urls = [row[0] for row in cursor.fetchall()]
 
-cursor.execute('select * from tracks where tracks.name like "%feat.%" and url not like "%spotify%";')
-result = cursor.fetchall()
+# cursor.execute('select * from tracks where tracks.name like "%feat.%" and url not like "%spotify%";')
+# result = cursor.fetchall()
 
-for row in result:
-    print(row[1])
-    url = input("url? ")
-    while url:
-        if url in artist_urls:
-            artist_id = artist_urls.index(url) + 1
-        else:
-            cursor.execute('INSERT INTO artists (name, url) VALUES (%s, %s)', (input(f"WHO's this artist? {url}"), url))
-            artist_urls.append(url)
-            artist_id = len(artist_urls)
-        cursor.execute('INSERT INTO tracks_artists (track_id, artist_id, main) VALUES (%s, %s, %s)', (row[0], artist_id, 0))
-        db.commit()
-        url = input("url? ")
+# for row in result:
+#     print(row[1])
+#     url = input("url? ")
+#     while url:
+#         if url in artist_urls:
+#             artist_id = artist_urls.index(url) + 1
+#         else:
+#             cursor.execute('INSERT INTO artists (name, url) VALUES (%s, %s)', (input(f"WHO's this artist? {url}"), url))
+#             artist_urls.append(url)
+#             artist_id = len(artist_urls)
+#         cursor.execute('INSERT INTO tracks_artists (track_id, artist_id, main) VALUES (%s, %s, %s)', (row[0], artist_id, 0))
+#         db.commit()
+#         url = input("url? ")
 
     # url = row[2]
 

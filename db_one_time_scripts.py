@@ -7,9 +7,15 @@ def merge_albums(urls, sp, db, cursor):
 
     titles = []
     album_dicts = []
+    ids = []
 
     for url in urls:
-        cursor.execute('SELECT * FROM tracks WHERE album = %s', [url])
+        cursor.execute('SELECT id from albums where url = %s', [url])
+        ids.append(cursor.fetchall()[0][0])
+
+    input(ids)
+    for url in urls:
+        cursor.execute('SELECT * FROM tracks inner join albums on tracks.album_id = albums.id WHERE albums.url = %s', [url])
         titles.append([song[1] for song in cursor.fetchall()])
         tracks = sp.album_tracks(url)['items']
         track_titles = [track['name'] for track in tracks]
@@ -41,13 +47,14 @@ def merge_albums(urls, sp, db, cursor):
     i = input("Ok you want to do it? Choose the index of the album you want to keep, or press enter to skip")
     if i:
         index = int(i)
-        good_url = urls[index]
+        good_id = ids[index]
         album_dict = album_dicts[index]
-        del urls[index]
+        del ids[index]
         del titles[index]
-        for (url, title_set) in zip(urls, titles):
+        for (id, title_set) in zip(ids, titles):
             for title in title_set:
-                cursor.execute('UPDATE tracks SET album = %s, url = %s where name = %s and album = %s', (good_url, album_dict[title], title, url))
+                print(f'{good_id}, {album_dict[title]}, {title}, {id}')
+                cursor.execute('UPDATE tracks SET album_id = %s, url = %s where name = %s and album_id = %s', (good_id, album_dict[title], title, id))
                 db.commit()
 
 
