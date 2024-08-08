@@ -27,14 +27,15 @@ def search_spotify_tracks(sp_tracks, bridge_codes):
 
 
 # save album_urls for checking later
-cursor.execute('SELECT url FROM albums ORDER BY id')
-album_urls = [row[0] for row in cursor.fetchall()]
+cursor.execute('SELECT url, id FROM albums ORDER BY id')
+album_data = cursor.fetchall()
+album_urls = [row[0] for row in album_data]
+album_ids = [row[1] for row in album_data]
 
-cursor.execute('select url from artists order by id')
-artist_urls = [row[0] for row in cursor.fetchall()]
-
-cursor.execute('ALTER TABLE albums AUTO_INCREMENT = %s', len(album_urls) + 1)
-cursor.execute('ALTER TABLE artists AUTO_INCREMENT = %s', len(artist_urls) + 1)
+cursor.execute('select url, id from artists order by id')
+artist_data = cursor.fetchall()
+artist_urls = [row[0] for row in artist_data]
+artist_ids = [row[1] for row in artist_data]
 
 # save last_fm_str_tracks for checking later
 cursor.execute('SELECT * FROM last_FM_str_tracks;')
@@ -130,23 +131,23 @@ for seconds in range(start_time, int(time.time()), 43200):
             else:
                 input(f'Adding {title} by {artists[0]['name']} off {album_title}. Press Ctrl-C now if this is a mistake')
                 if album_url in album_urls:
-                    album_id = album_urls.index(album_url) + 1
+                    album_id = album_ids[album_urls.index(album_url)]
                 else:
                     cursor.execute('INSERT INTO albums (url, name, type) VALUES (%s, %s, %s)', (album_url, album_title, album_type))
                     album_urls.append(album_url)
-                    album_id = len(album_urls)
+                    album_id = cursor.lastrowid
                 cursor.execute('INSERT INTO tracks (name, album_id, url, runtime) VALUES (%s, %s, %s, %s)', (title, album_id, url, runtime))
                 track_id = cursor.lastrowid
 
                 primary = 1
                 for artist in artists:
-                    url = artist['url']
-                    if url in artist_urls:
-                        artist_id = artist_urls.index(url) + 1
+                    artist_url = artist['url']
+                    if artist_url in artist_urls:
+                        artist_id = artist_ids[artist_urls.index(artist_url)]
                     else:
-                        cursor.execute('INSERT INTO artists (name, url) VALUES (%s, %s)', (artist['name'], url))
+                        cursor.execute('INSERT INTO artists (name, url) VALUES (%s, %s)', (artist['name'], artist_url))
                         artist_urls.append(url)
-                        artist_id = len(artist_urls)
+                        artist_id = cursor.lastrowid
                     cursor.execute('INSERT INTO tracks_artists (track_id, artist_id, main) VALUES (%s, %s, %s)', (track_id, artist_id, primary))
                     primary = 0
 
