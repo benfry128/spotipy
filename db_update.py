@@ -1,6 +1,6 @@
 import time
 import requests
-from utils import album_explicit, db_setup, LAST_FM_API_KEY, remove_apostrophe, spotipySetup, strip_str
+from utils import album_explicit_and_few_artists, db_setup, LAST_FM_API_KEY, remove_apostrophe, spotipySetup, strip_str
 from datetime import datetime
 
 sp = spotipySetup()
@@ -10,9 +10,9 @@ sp = spotipySetup()
 SEARCH_PRIORITES = [
     lambda track: track['album']['external_urls']['spotify'] in album_urls,
     lambda track: track['explicit'] and track['album']['album_type'] == 'album',
-    lambda track: album_explicit(sp.album(track['album']['uri'])) and track['album']['album_type'] == 'album',
+    lambda track: album_explicit_and_few_artists(sp.album(track['album']['uri'])) and track['album']['album_type'] == 'album',
     lambda track: track['explicit'],
-    lambda track: album_explicit(sp.album(track['album']['uri'])),
+    lambda track: album_explicit_and_few_artists(sp.album(track['album']['uri'])),
     lambda _: True,
 ]
 

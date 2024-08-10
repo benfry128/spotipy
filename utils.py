@@ -184,7 +184,9 @@ def sp_albums(sp, cursor):
     return sp_albums
 
 
-def album_explicit(sp_album):
-    tracks_explicit = bool([1 for track in sp_album['tracks']['items'] if track['explicit']])
+def album_explicit_and_few_artists(sp_album):
+    tracks = sp_album['tracks']['items']
+    tracks_explicit = bool([1 for track in tracks if track['explicit']])
+    three_or_fewer_artists = len(set([track['artists'][0]['name'] for track in tracks])) <= 3
 
-    return tracks_explicit
+    return f'{tracks_explicit} and {three_or_fewer_artists}'
