@@ -134,8 +134,9 @@ for seconds in range(start_time, int(time.time()), 43200):
                     album_id = album_ids[album_urls.index(album_url)]
                 else:
                     cursor.execute('INSERT INTO albums (url, name, type) VALUES (%s, %s, %s)', (album_url, album_title, album_type))
-                    album_urls.append(album_url)
                     album_id = cursor.lastrowid
+                    album_urls.append(album_url)
+                    album_ids.append(album_id)
                 cursor.execute('INSERT INTO tracks (name, album_id, url, runtime) VALUES (%s, %s, %s, %s)', (title, album_id, url, runtime))
                 track_id = cursor.lastrowid
 
@@ -146,8 +147,9 @@ for seconds in range(start_time, int(time.time()), 43200):
                         artist_id = artist_ids[artist_urls.index(artist_url)]
                     else:
                         cursor.execute('INSERT INTO artists (name, url) VALUES (%s, %s)', (artist['name'], artist_url))
-                        artist_urls.append(url)
                         artist_id = cursor.lastrowid
+                        artist_urls.append(url)
+                        artist_ids.append(artist_id)
                     cursor.execute('INSERT INTO tracks_artists (track_id, artist_id, main) VALUES (%s, %s, %s)', (track_id, artist_id, primary))
                     primary = 0
 

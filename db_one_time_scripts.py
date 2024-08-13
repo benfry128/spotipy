@@ -163,3 +163,22 @@ def swap_out_clean_versions_of_albums(sp, db, cursor):
                             cursor.execute('insert into albums (url, title, type) values (%s, %s, %s)', [album['external_urls']['spotify'], album['name'], album['album_type']])
                             cursor.execute('update tracks set album = %s where album = %s', [album['external_urls']['spotify'], sp_album['external_urls']['spotify']])
                             db.commit()
+
+
+def add_popularity_scores(sp, db, cursor):
+    sp_tracks = utils.sp_tracks(sp, cursor)
+
+    for track in sp_tracks:
+        print(f'{track['name']}\n{track['popularity']}')
+        cursor.execute('update tracks set popularity = %s where url = %s', [track['popularity'], track['external_urls']['spotify']])
+
+    db.commit()
+
+
+def add_album_art(sp, db, cursor):
+    albums = utils.sp_albums(sp, cursor)
+
+    for album in albums:
+        cursor.execute('update albums set image = %s where url = %s', [album['images'][0]['url'], album['external_urls']['spotify']])
+
+    db.commit()
