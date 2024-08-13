@@ -1,12 +1,11 @@
 import utils
-from pprint import pprint
 import random
 
 sp = utils.spotipySetup()
 
 (db, cursor) = utils.db_setup()
 
-cursor.execute('''select count(utc), image from 
+cursor.execute('''select count(utc), image from
 scrobbles join track_album_main_artist on scrobbles.track_id = track_album_main_artist.track_id
 join albums on track_album_main_artist.album_id = albums.id
 where not image = ''
