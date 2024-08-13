@@ -149,6 +149,7 @@ def compile_image(to_a_side, size, image_urls):
         print('Building image...')
         response = requests.get(url, stream=True)
         image = Image.open(io.BytesIO(response.content))
+        image.thumbnail((size, size))
         x = (id % to_a_side) * size
         y = (id // to_a_side) * size
         bigImage.paste(image, (x, y))
