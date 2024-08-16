@@ -148,7 +148,7 @@ for seconds in range(start_time, int(time.time()), 43200):
                     else:
                         cursor.execute('INSERT INTO artists (name, url) VALUES (%s, %s)', (artist['name'], artist_url))
                         artist_id = cursor.lastrowid
-                        artist_urls.append(url)
+                        artist_urls.append(artist_url)
                         artist_ids.append(artist_id)
                     cursor.execute('INSERT INTO tracks_artists (track_id, artist_id, main) VALUES (%s, %s, %s)', (track_id, artist_id, primary))
                     primary = 0
