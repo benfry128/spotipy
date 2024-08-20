@@ -179,6 +179,6 @@ def add_album_art(sp, db, cursor):
     albums = utils.sp_albums(sp, cursor)
 
     for album in albums:
-        cursor.execute('update albums set image = %s where url = %s', [album['images'][0]['url'], album['external_urls']['spotify']])
+        cursor.execute('update albums set image = %s where uri = %s', [album['images'][0]['url'], album['id']])
 
     db.commit()

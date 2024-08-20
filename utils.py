@@ -14,6 +14,7 @@ LAST_FM_API_KEY = os.getenv('LAST_FM_API_KEY')
 SPOTIFY_CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID')
 SPOTIFY_CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET')
 MYSQL_PWD = os.getenv('MYSQL_PWD')
+YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
 
 
 def strip_str(string):
