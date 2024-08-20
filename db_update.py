@@ -8,11 +8,11 @@ sp = spotipySetup()
 (db, cursor) = db_setup()
 
 SEARCH_PRIORITES = [
-    lambda track: track['album']['external_urls']['spotify'] in album_urls,
+    lambda track: 'sp' + track['album']['id'] in album_uri_matches,
     lambda track: track['explicit'] and track['album']['album_type'] == 'album',
-    lambda track: album_explicit_and_few_artists(sp.album(track['album']['uri'])) and track['album']['album_type'] == 'album',
+    lambda track: album_explicit_and_few_artists(sp.album(track['album']['id'])) and track['album']['album_type'] == 'album',
     lambda track: track['explicit'],
-    lambda track: album_explicit_and_few_artists(sp.album(track['album']['uri'])),
+    lambda track: album_explicit_and_few_artists(sp.album(track['album']['id'])),
     lambda _: True,
 ]
 
@@ -27,15 +27,15 @@ def search_spotify_tracks(sp_tracks, bridge_codes):
 
 
 # save album_urls for checking later
-cursor.execute('SELECT url, id FROM albums ORDER BY id')
+cursor.execute('SELECT id, source, uri FROM albums')
 album_data = cursor.fetchall()
-album_urls = [row[0] for row in album_data]
-album_ids = [row[1] for row in album_data]
+album_ids = [row[0] for row in album_data]
+album_uri_matches = [row[1] + row[2] for row in album_data]
 
-cursor.execute('select url, id from artists order by id')
+cursor.execute('select id, source, uri from artists where not uri is null')
 artist_data = cursor.fetchall()
-artist_urls = [row[0] for row in artist_data]
-artist_ids = [row[1] for row in artist_data]
+artist_ids = [row[0] for row in artist_data]
+artist_uri_matches = [row[1] + row[2] for row in artist_data]
 
 # save last_fm_str_tracks for checking later
 cursor.execute('SELECT * FROM last_FM_str_tracks;')
@@ -102,53 +102,61 @@ for seconds in range(start_time, int(time.time()), 43200):
                 elif url[0:30] == 'https://open.spotify.com/track':
                     good_track = sp.track(url)
                 else:
-                    corrected_title = input("If the title is wrong, put it in correctly here: ")
-                    title = corrected_title if corrected_title else lfm_title
-                    corrected_artist = input("If the artist's name is wrong, put it in correctly here: ")
-                    artists = [{'name': corrected_artist if corrected_artist else lfm_artist, 'url': input(f'Input URL of artist "{lfm_artist}"')}]
-                    additional_artist_name = input("Other artists? Add name here: ")
-                    while additional_artist_name:
-                        artists.append({'name': additional_artist_name, 'url': input("Give the URL of that artist pls: ")})
-                        additional_artist_name = input("Other artists? Add name here: ")
-                    runtime = int(input("Runtime? "))
-                    album_url = input("Album url? ")
-                    album_title = input("Album title? ")
-                    album_type = input("Album type? ")
+                    # r = requests.get(f'https://www.googleapis.com/youtube/v3/videos?part=snippet&id={yt_id}&key={YOUTUBE_API_KEY}')
+                    input("HI")
+                    # corrected_title = input("If the title is wrong, put it in correctly here: ")
+                    # title = corrected_title if corrected_title else lfm_title
+                    # corrected_artist = input("If the artist's name is wrong, put it in correctly here: ")
+                    # artists = [{'name': corrected_artist if corrected_artist else lfm_artist, 'url': input(f'Input URL of artist "{lfm_artist}"')}]
+                    # additional_artist_name = input("Other artists? Add name here: ")
+                    # while additional_artist_name:
+                    #     artists.append({'name': additional_artist_name, 'url': input("Give the URL of that artist pls: ")})
+                    #     additional_artist_name = input("Other artists? Add name here: ")
+                    # runtime = int(input("Runtime? "))
+                    # album_url = input("Album url? ")
+                    # album_title = input("Album title? ")
+                    # album_type = input("Album type? ")
 
             if good_track:
                 title = good_track['name']
-                artists = [{'name': artist['name'], 'url': artist['external_urls']['spotify']} for artist in good_track['artists']]
-                album_url = good_track['album']['external_urls']['spotify']
-                runtime = int(good_track['duration_ms'] / 1000)
+                uri = good_track['id']
+                track_source = 'sp'
                 album_title = good_track['album']['name']
+                album_uri = good_track['album']['id']
+                album_source = 'sp'
                 album_type = good_track['album']['album_type']
-                url = good_track['external_urls']['spotify']
+                artists = [{'name': artist['name'], 'uri': artist['id'], 'source': 'sp'} for artist in good_track['artists']]
+                runtime = int(good_track['duration_ms'] / 1000)
+                image = good_track['album']['images'][0]['url'][24:]
 
-            cursor.execute(f'SELECT id FROM tracks WHERE url = "{url}"')
+            cursor.execute('SELECT id FROM tracks WHERE uri = %s AND source = %s', [uri, track_source])
             results = cursor.fetchone()
             if results:
                 track_id = results[0]
             else:
                 input(f'Adding {title} by {artists[0]['name']} off {album_title}. Press Ctrl-C now if this is a mistake')
-                if album_url in album_urls:
-                    album_id = album_ids[album_urls.index(album_url)]
+                album_uri_match = album_source + album_uri
+                if album_uri_match in album_uri_matches:
+                    album_id = album_ids[album_uri_matches.index(album_uri_match)]
                 else:
-                    cursor.execute('INSERT INTO albums (url, name, type) VALUES (%s, %s, %s)', (album_url, album_title, album_type))
+                    cursor.execute('INSERT INTO albums (uri, name, type, source, image) VALUES (%s, %s, %s, %s, %s)', (album_uri, album_title, album_type, album_source, image))
                     album_id = cursor.lastrowid
-                    album_urls.append(album_url)
+                    album_uri_matches.append(album_uri_match)
                     album_ids.append(album_id)
-                cursor.execute('INSERT INTO tracks (name, album_id, url, runtime) VALUES (%s, %s, %s, %s)', (title, album_id, url, runtime))
+                cursor.execute('INSERT INTO tracks (name, album_id, uri, runtime, source) VALUES (%s, %s, %s, %s, %s)', (title, album_id, uri, runtime, track_source))
                 track_id = cursor.lastrowid
 
                 primary = 1
                 for artist in artists:
-                    artist_url = artist['url']
-                    if artist_url in artist_urls:
-                        artist_id = artist_ids[artist_urls.index(artist_url)]
+                    artist_uri = artist['uri']
+                    artist_source = artist['source']
+                    artist_uri_match = artist_source + artist_uri
+                    if artist_uri_match in artist_uri_matches:
+                        artist_id = artist_ids[artist_uri_matches.index(artist_uri_match)]
                     else:
-                        cursor.execute('INSERT INTO artists (name, url) VALUES (%s, %s)', (artist['name'], artist_url))
+                        cursor.execute('INSERT INTO artists (name, uri, source) VALUES (%s, %s, %s)', (artist['name'], artist_uri, artist_source))
                         artist_id = cursor.lastrowid
-                        artist_urls.append(artist_url)
+                        artist_uri_matches.append(artist_uri_match)
                         artist_ids.append(artist_id)
                     cursor.execute('INSERT INTO tracks_artists (track_id, artist_id, main) VALUES (%s, %s, %s)', (track_id, artist_id, primary))
                     primary = 0

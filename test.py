@@ -41,8 +41,6 @@ sp = utils.spotipySetup()
 #             db.commit()
 #             break
 
-
-
 # r = requests.get(f'https://www.googleapis.com/youtube/v3/playlists?part=snippet&id=PL3q9ip9kYA-CMviRiuVmCrpermQVxPgkj&key={utils.YOUTUBE_API_KEY}')
 
 # pprint(r.json())
