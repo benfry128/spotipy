@@ -1,6 +1,6 @@
 import time
 import requests
-from utils import album_explicit_and_few_artists, db_setup, LAST_FM_API_KEY, remove_apostrophe, spotipySetup, strip_str
+from utils import album_explicit_and_few_artists, db_setup, LAST_FM_API_KEY, remove_apostrophe, spotipySetup, strip_str, YOUTUBE_API_KEY
 from datetime import datetime
 
 sp = spotipySetup()
@@ -25,6 +25,8 @@ def search_spotify_tracks(sp_tracks, bridge_codes):
                 return sp_track
     return None
 
+
+THUMBNAIL_SIZES = ['maxres', 'standard', 'high', 'medium', 'default']
 
 # save album_urls for checking later
 cursor.execute('SELECT id, source, uri FROM albums')
@@ -98,36 +100,65 @@ for seconds in range(start_time, int(time.time()), 43200):
                     print(f"{sp_track['name']} by {sp_track['artists'][0]['name']} off {sp_track['album']['name']}. url is {sp_track['external_urls']['spotify']}")
                 url = input('\nIf you can find the song, enter the url. If not, press enter. ')
                 if not url:
-                    continue  # if they don't enter a url, just skip to next track
+                    continue
                 elif url[0:30] == 'https://open.spotify.com/track':
                     good_track = sp.track(url)
+                elif url[0:32] == 'https://www.youtube.com/watch?v=' or url[0:17] == 'https://youtu.be/':
+                    corrected_title = input(f"If {lfm_title} is the wrong title, put it in correctly here: ")
+                    title = corrected_title if corrected_title else lfm_title
+                    uri = url[(32 if url[8] == 'w' else 17):]
+                    track_source = 'yt'
+                    album_source = 'yt'
+                    album_type = input("Album type? ")
+                    if album_type in ['single', 'video']:
+                        album_title = title
+                        album_uri = uri[:uri.index('?')] if '?' in uri else uri
+                        yt_api_type = 'videos'
+                    else:
+                        album_url = input("Input playlist url: ")
+                        if album_url[0:31] == 'https://open.spotify.com/album/':
+                            sp_album = sp.album(album_url)
+                            album_type = sp_album['album_type']
+                            album_title = sp_album['name']
+                            album_uri = sp_album['id']
+                            album_source = 'sp'
+                            image = sp_album['images'][0]['url'][24:]
+                        else:
+                            album_title = input("Album title? ")
+                            album_uri = album_url[40:]
+                            yt_api_type = 'playlists'
+
+                    if album_source == 'yt':
+                        thumbnails = requests.get(f'https://www.googleapis.com/youtube/v3/{yt_api_type}?part=snippet&id={album_uri}&key={YOUTUBE_API_KEY}').json()['items'][0]['snippet']['thumbnails']
+                        for size in THUMBNAIL_SIZES:
+                            if size in thumbnails:
+                                image = thumbnails[size]['url'][23:-11]
+                                break
+
+                    corrected_artist = input("If the primary artist's name is wrong, put it in correctly here: ")
+                    artist_url = input("URL of primary artist? ")
+                    artists = [{'name': corrected_artist if corrected_artist else lfm_artist, 'uri': artist_url[(32 if artist_url[8] == 'o' else 34):], 'source': 'sp' if artist_url[8] == 'o' else 'yt'}]
+                    additional_artist_name = input("Other artists? Add name here: ")
+                    while additional_artist_name:
+                        artist_url = input("URL of that artist? ")  # @TODO: maybe convert this so it just takes the url and then converts the url just before adding it to the db
+                        artists.append({'name': corrected_artist if corrected_artist else lfm_artist, 'uri': artist_url[(32 if artist_url[8] == 'o' else 34):], 'source': 'sp' if artist_url[8] == 'o' else 'yt'})
+                        additional_artist_name = input("Other artists? Add name here: ")
+                    runtime = int(input("Runtime? "))
+
                 else:
-                    # r = requests.get(f'https://www.googleapis.com/youtube/v3/videos?part=snippet&id={yt_id}&key={YOUTUBE_API_KEY}')
-                    input("HI")
-                    # corrected_title = input("If the title is wrong, put it in correctly here: ")
-                    # title = corrected_title if corrected_title else lfm_title
-                    # corrected_artist = input("If the artist's name is wrong, put it in correctly here: ")
-                    # artists = [{'name': corrected_artist if corrected_artist else lfm_artist, 'url': input(f'Input URL of artist "{lfm_artist}"')}]
-                    # additional_artist_name = input("Other artists? Add name here: ")
-                    # while additional_artist_name:
-                    #     artists.append({'name': additional_artist_name, 'url': input("Give the URL of that artist pls: ")})
-                    #     additional_artist_name = input("Other artists? Add name here: ")
-                    # runtime = int(input("Runtime? "))
-                    # album_url = input("Album url? ")
-                    # album_title = input("Album title? ")
-                    # album_type = input("Album type? ")
+                    raise Exception("Couldn't parse link, bruh, what'd you do???")
 
             if good_track:
                 title = good_track['name']
                 uri = good_track['id']
                 track_source = 'sp'
+                album_type = good_track['album']['album_type']
                 album_title = good_track['album']['name']
                 album_uri = good_track['album']['id']
                 album_source = 'sp'
-                album_type = good_track['album']['album_type']
+                image = good_track['album']['images'][0]['url'][24:]
                 artists = [{'name': artist['name'], 'uri': artist['id'], 'source': 'sp'} for artist in good_track['artists']]
                 runtime = int(good_track['duration_ms'] / 1000)
-                image = good_track['album']['images'][0]['url'][24:]
 
             cursor.execute('SELECT id FROM tracks WHERE uri = %s AND source = %s', [uri, track_source])
             results = cursor.fetchone()
