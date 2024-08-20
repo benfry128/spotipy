@@ -1,49 +1,8 @@
 import utils
-import random
-import db_one_time_scripts
-import requests
-from pprint import pprint
 
 sp = utils.spotipySetup()
 
 (db, cursor) = utils.db_setup()
-
-# cursor.execute('SELECT id, url FROM albums WHERE url like "%youtu.be%"')
-# rows = cursor.fetchall()
-
-# THUMBNAIL_SIZES = ['maxres', 'standard', 'high', 'medium', 'default']
-
-# for row in rows:
-#     db_id = row[0]
-#     yt_id = row[1][17:]
-#     r = requests.get(f'https://www.googleapis.com/youtube/v3/videos?part=snippet&id={yt_id}&key={utils.YOUTUBE_API_KEY}')
-#     pprint(r.json())
-#     thumbnails = r.json()['items'][0]['snippet']['thumbnails']
-#     for size in THUMBNAIL_SIZES:
-#         if size in thumbnails:
-#             cursor.execute('UPDATE albums SET image = %s where id = %s', [thumbnails[size]['url'], db_id])
-#             db.commit()
-#             break
-
-# cursor.execute('SELECT id, url FROM albums WHERE url like "%youtube.com/playlist%"')
-# rows = cursor.fetchall()
-
-# THUMBNAIL_SIZES = ['maxres', 'standard', 'high', 'medium', 'default']
-
-# for row in rows:
-#     db_id = row[0]
-#     yt_id = row[1][38:]
-#     r = requests.get(f'https://www.googleapis.com/youtube/v3/playlists?part=snippet&id={yt_id}&key={utils.YOUTUBE_API_KEY}')
-#     thumbnails = r.json()['items'][0]['snippet']['thumbnails']
-#     for size in THUMBNAIL_SIZES:
-#         if size in thumbnails:
-#             cursor.execute('UPDATE albums SET image = %s where id = %s', [thumbnails[size]['url'], db_id])
-#             db.commit()
-#             break
-
-# r = requests.get(f'https://www.googleapis.com/youtube/v3/playlists?part=snippet&id=PL3q9ip9kYA-CMviRiuVmCrpermQVxPgkj&key={utils.YOUTUBE_API_KEY}')
-
-# pprint(r.json())
 
 # cursor.execute('''select count(utc), image from
 # scrobbles join track_album_main_artist on scrobbles.track_id = track_album_main_artist.track_id

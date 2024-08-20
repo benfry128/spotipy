@@ -1,5 +1,6 @@
 import utils
 from pprint import pprint
+import requests
 
 
 def merge_albums(urls, sp, db, cursor):
@@ -182,3 +183,36 @@ def add_album_art(sp, db, cursor):
         cursor.execute('update albums set image = %s where uri = %s', [album['images'][0]['url'], album['id']])
 
     db.commit()
+
+    cursor.execute('SELECT id, url FROM albums WHERE url like "%youtu.be%"')
+    rows = cursor.fetchall()
+
+    THUMBNAIL_SIZES = ['maxres', 'standard', 'high', 'medium', 'default']
+
+    for row in rows:
+        db_id = row[0]
+        yt_id = row[1][17:]
+        r = requests.get(f'https://www.googleapis.com/youtube/v3/videos?part=snippet&id={yt_id}&key={utils.YOUTUBE_API_KEY}')
+        pprint(r.json())
+        thumbnails = r.json()['items'][0]['snippet']['thumbnails']
+        for size in THUMBNAIL_SIZES:
+            if size in thumbnails:
+                cursor.execute('UPDATE albums SET image = %s where id = %s', [thumbnails[size]['url'], db_id])
+                db.commit()
+                break
+
+    cursor.execute('SELECT id, url FROM albums WHERE url like "%youtube.com/playlist%"')
+    rows = cursor.fetchall()
+
+    THUMBNAIL_SIZES = ['maxres', 'standard', 'high', 'medium', 'default']
+
+    for row in rows:
+        db_id = row[0]
+        yt_id = row[1][38:]
+        r = requests.get(f'https://www.googleapis.com/youtube/v3/playlists?part=snippet&id={yt_id}&key={utils.YOUTUBE_API_KEY}')
+        thumbnails = r.json()['items'][0]['snippet']['thumbnails']
+        for size in THUMBNAIL_SIZES:
+            if size in thumbnails:
+                cursor.execute('UPDATE albums SET image = %s where id = %s', [thumbnails[size]['url'], db_id])
+                db.commit()
+                break
