@@ -3,33 +3,32 @@ from pprint import pprint
 import requests
 
 
-def merge_albums(urls, sp, db, cursor):
+def merge_albums(uris, sp, db, cursor):
     # code to merge 2 albums
 
     titles = []
     album_dicts = []
     ids = []
 
-    for url in urls:
-        cursor.execute('SELECT id from albums where url = %s', [url])
+    for uri in uris:
+        cursor.execute('SELECT id from albums where uri = %s', [uri])
         ids.append(cursor.fetchall()[0][0])
 
-    input(ids)
-    for url in urls:
-        cursor.execute('SELECT * FROM tracks inner join albums on tracks.album_id = albums.id WHERE albums.url = %s', [url])
+    for uri in uris:
+        cursor.execute('SELECT * FROM tracks inner join albums on tracks.album_id = albums.id WHERE albums.uri = %s', [uri])
         titles.append([song[1] for song in cursor.fetchall()])
-        tracks = sp.album_tracks(url)['items']
+        tracks = sp.album_tracks(uri)['items']
         track_titles = [track['name'] for track in tracks]
-        track_urls = [track['external_urls']['spotify'] for track in tracks]
-        album_dicts.append(dict(zip(track_titles, track_urls)))
+        track_uris = [track['id'] for track in tracks]
+        album_dicts.append(dict(zip(track_titles, track_uris)))
 
     for t in titles:
         for ti in t:
             print(ti)
     input('Do you need to go and merge some tracks first????')
 
-    for (url, album_dict, s) in zip(urls, album_dicts, titles):
-        print(f"Let's see about this url: {url}")
+    for (uri, album_dict, s) in zip(uris, album_dicts, titles):
+        print(f"Let's see about this url: {uri}")
         print(f'We have {len(s)} tracks in the db related to this url')
         good = True
         for title_set in titles:
@@ -55,7 +54,7 @@ def merge_albums(urls, sp, db, cursor):
         for (id, title_set) in zip(ids, titles):
             for title in title_set:
                 print(f'{good_id}, {album_dict[title]}, {title}, {id}')
-                cursor.execute('UPDATE tracks SET album_id = %s, url = %s where name = %s and album_id = %s', (good_id, album_dict[title], title, id))
+                cursor.execute('UPDATE tracks SET album_id = %s, uri = %s where name = %s and album_id = %s', (good_id, album_dict[title], title, id))
                 db.commit()
 
 

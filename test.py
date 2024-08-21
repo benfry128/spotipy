@@ -1,8 +1,11 @@
 import utils
+import db_one_time_scripts
 
 sp = utils.spotipySetup()
 
 (db, cursor) = utils.db_setup()
+
+db_one_time_scripts.merge_albums(['1nOOYWt0s8RGKgKDTMA77h', '3fhEairiL0g4qfXVUTFtF1'], sp, db, cursor)
 
 # cursor.execute('''select count(utc), image from
 # scrobbles join track_album_main_artist on scrobbles.track_id = track_album_main_artist.track_id
