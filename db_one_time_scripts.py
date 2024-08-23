@@ -4,45 +4,61 @@ import requests
 
 
 def change_singles_to_albums(sp, db, cursor):
-    cursor.execute('SELECT * from albums where type = "single" order by url')
+    cursor.execute('SELECT id, name from albums where type = "single" and source = "sp" and id > 273 order by id')
 
     albums = cursor.fetchall()
 
-    for a in albums:
-        print("")
-        print(a[1])
-        cursor.execute('select * from tracks where album = %s', [a[0]])
+    for (single_id, single_name) in albums:
+        print(single_id)
+        print(single_name)
+        cursor.execute('select track, artist, track_id from track_album_main_artist where album_id = %s', [single_id])
         tracks = cursor.fetchall()
-        for t in tracks:
-            print(t[1])
-            possible_tracks = sp.search(q=f'track:{t[1]} artist:{t[2]}', type='track', limit=10)['tracks']['items']
+        for (single_track, single_artist, single_track_id) in tracks:
+            print(f'track: {single_track} artist: {single_artist}')
+            possible_tracks = sp.search(q=f'track:{single_track} artist:{single_artist}', type='track', limit=10)['tracks']['items']
+            skip = True
             for track in possible_tracks:
-                if track['album']['album_type'] == 'album':
-                    print(f"{track['name']} by {track['artists'][0]['name']} off {track['album']['name']}. url is {track['external_urls']['spotify']}")
+                if track['name'] == single_track:
+                    if track['album']['album_type'] == 'album':
+                        print(f"Track: {track['name']} Album {track['album']['name']}. url is {track['external_urls']['spotify']}")
+                        skip = False
 
-            url = input('Which url? or enter an int')
+                    if track['album']['name'] != single_name:
+                        cursor.execute('select id from albums where uri = %s', [track['album']['id']])
+                        if cursor.fetchall():
+                            print("WE GOT A HIT IN THE DB THIS IS GOOD")
+                            skip = False
+
+            if skip:
+                continue
+
+            url = input('Which url?')
 
             if not url:
                 continue
 
             good_track = sp.track(url)
-            input(good_track['album']['name'])
-            album_url = good_track['album']['external_urls']['spotify']
+            print(good_track)
+            uri = good_track['id']
 
-            cursor.execute('select * from tracks where url = %s', [url])
+            cursor.execute('select id from tracks where uri = %s', [uri])
             old_record = cursor.fetchone()
             if old_record:
-                utils.merge_tracks(old_record[0], t[0], db, cursor)
+                utils.merge_tracks(old_record[0], single_track_id, db, cursor)
                 continue
 
-            cursor.execute('select * from albums where url = %s', [album_url])
-            old_album = cursor.fetchone()
-            if not old_album:
-                input(f"about to put in a new album: {good_track['album']['name']}, it's a {good_track['album']['album_type']}")
-                cursor.execute('INSERT INTO albums (url, title, type) VALUES (%s, %s, %s)', (album_url, good_track['album']['name'], good_track['album']['album_type']))
+            album_uri = good_track['album']['id']
 
-            input(f"about to update this track's album ok? {url} {album_url}")
-            cursor.execute('update tracks set url = %s, album = %s where id = %s', (url, album_url, t[0]))
+            cursor.execute('select id from albums where uri = %s', [album_uri])
+            old_album = cursor.fetchone()
+            if old_album:
+                album_id = old_album[0]
+            else:
+                input(f"about to put in a new album: {good_track['album']['name']}")
+                cursor.execute('INSERT INTO albums (uri, name, type, source, image) VALUES (%s, %s, %s, %s, %s)', (album_uri, good_track['album']['name'], good_track['album']['album_type'], 'sp', good_track['album']['images'][0]['url'][24:]))
+                album_id = cursor.lastrowid
+
+            cursor.execute('update tracks set uri = %s, album_id = %s where id = %s', (url, album_id, single_track_id))
             db.commit()
 
 

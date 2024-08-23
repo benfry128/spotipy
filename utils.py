@@ -47,7 +47,7 @@ def db_setup():
 
 
 def merge_tracks(good_track, bad_track, db, cursor):
-    cursor.execute('select track, artist from track_album_artist where track_id in (%s, %s)', (good_track, bad_track))
+    cursor.execute('select track, artist from track_album_main_artist where track_id in (%s, %s)', (good_track, bad_track))
 
     [(name1, artist1), (name2, artist2)] = cursor.fetchall()
 
@@ -58,7 +58,6 @@ def merge_tracks(good_track, bad_track, db, cursor):
         cursor.execute(f'UPDATE last_fm_str_tracks SET track_id = {good_track} WHERE track_id = {bad_track}')
         cursor.execute(f'DELETE FROM tracks_artists where track_id = {bad_track}')
         cursor.execute(f'DELETE FROM tracks WHERE id = {bad_track}')
-
         db.commit()
 
 
