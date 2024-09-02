@@ -6,8 +6,9 @@ import requests
 import spotipy
 import time
 from dotenv import load_dotenv
-from PIL import Image
+from PIL import Image, ImageDraw
 from spotipy.oauth2 import SpotifyOAuth
+import numpy as np
 
 load_dotenv()
 LAST_FM_API_KEY = os.getenv('LAST_FM_API_KEY')
@@ -68,7 +69,7 @@ def delete_track(id, db, cursor):
     db.commit()
 
 
-def getRecentTracks(start_days_back, end_days_back, sp, db, cursor):
+def getRecentTracks(start_days_back, end_days_back, cursor):
     sql = 'SELECT utc, name, artist, album FROM scrobbles INNER JOIN tracks ON id = track_id WHERE utc > %s AND utc < %s'
     cursor.execute(sql, ((int((time.time()-14400) / 86400) - start_days_back) * 86400 + 14400, (int((time.time()-14400) / 86400) - end_days_back + 1) * 86400 + 14400))
     recents_dicts = [
@@ -142,7 +143,7 @@ def trackDownTrack(track, sp):
     return None
 
 
-def compile_image(to_a_side, size, image_urls):
+def compile_square_image(to_a_side, size, image_urls):
     bigImage = Image.new("RGB", (size * to_a_side, size * to_a_side))
 
     for id, url in enumerate(image_urls):
@@ -246,3 +247,23 @@ def merge_albums(uris, sp, db, cursor):
                 print(f'{good_id}, {album_dict[title]}, {title}, {id}')
                 cursor.execute('UPDATE tracks SET album_id = %s, uri = %s where name = %s and album_id = %s', (good_id, album_dict[title], title, id))
                 db.commit()
+
+
+def compile_circle_image(size, image_urls):
+    images = len(image_urls)
+    big_image = Image.new('RGB', [size, size])
+
+    for id, url in enumerate(image_urls):
+        print('Building image...')
+        response = requests.get(url, stream=True)
+        image = Image.open(io.BytesIO(response.content))
+
+        resized = image.resize((size, size))
+
+        slice = Image.new('L', [size, size], 0)
+        draw = ImageDraw.Draw(slice)
+        draw.pieslice([(0, 0), (size, size)], id / images * 360, (id+1) / images * 360, fill='white', outline='white')
+
+        big_image.paste(resized, mask=slice)
+
+    big_image.show()

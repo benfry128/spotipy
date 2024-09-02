@@ -21,6 +21,12 @@ sp = utils.spotipySetup()
 # urls = urls[0:225]
 # random.shuffle(urls)
 
-# utils.compile_image(15, 80, urls)
+# utils.compile_square_image(15, 80, urls)
 
 # db_one_time_scripts.add_album_art(sp, db, cursor)
+
+utils.compile_circle_image(1000, ['https://i.scdn.co/image/ab67616d0000b273f38c6b37a21334e22005b1f7',
+                                  'https://i.scdn.co/image/ab67616d0000b2737d92a7b081f16384dfc13464',
+                                  'https://i.scdn.co/image/ab67616d0000b2735b96a8c5d61be8878452f8f1',
+                                  'https://i.scdn.co/image/ab67616d0000b2739a7c3dd5910b43e1f16c9ad1'
+                                  ])
