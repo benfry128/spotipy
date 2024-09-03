@@ -30,3 +30,6 @@ utils.compile_circle_image(1000, ['https://i.scdn.co/image/ab67616d0000b273f38c6
                                   'https://i.scdn.co/image/ab67616d0000b2735b96a8c5d61be8878452f8f1',
                                   'https://i.scdn.co/image/ab67616d0000b2739a7c3dd5910b43e1f16c9ad1'
                                   ])
+
+# @TODO: add function to get db records from a specific date period
+# @TODO: update compile_circle_image to handle different size slices
