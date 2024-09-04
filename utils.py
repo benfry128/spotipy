@@ -4,11 +4,10 @@ import os
 import re
 import requests
 import spotipy
-import time
+from datetime import datetime
 from dotenv import load_dotenv
 from PIL import Image, ImageDraw
 from spotipy.oauth2 import SpotifyOAuth
-import numpy as np
 
 load_dotenv()
 LAST_FM_API_KEY = os.getenv('LAST_FM_API_KEY')
@@ -69,18 +68,30 @@ def delete_track(id, db, cursor):
     db.commit()
 
 
-def getRecentTracks(start_days_back, end_days_back, cursor):
-    sql = 'SELECT utc, name, artist, album FROM scrobbles INNER JOIN tracks ON id = track_id WHERE utc > %s AND utc < %s'
-    cursor.execute(sql, ((int((time.time()-14400) / 86400) - start_days_back) * 86400 + 14400, (int((time.time()-14400) / 86400) - end_days_back + 1) * 86400 + 14400))
+def get_scrobbles_from_date_range(start, end, cursor):
+    cursor.execute('SELECT utc, au.track_id, artist_id, album_id, track, artist, album, track_url, artist_url, album_url, image_url '
+                   'FROM scrobbles as s INNER JOIN all_urls as au ON au.track_id = s.track_id WHERE utc > %s AND utc < %s', (start, end))
     recents_dicts = [
         {
-            'utc': recent[0],
-            'name': recent[1],
-            'artist': recent[2],
-            'album': recent[3]
-        } for recent in cursor.fetchall()
+            'utc': r[0],
+            'track_id': r[1],
+            'artist_id': r[2],
+            'album_id': r[3],
+            'track': r[4],
+            'artist': r[5],
+            'album': r[6],
+            'track_url': r[7],
+            'artist_url': r[8],
+            'album_url': r[9],
+            'image_url': r[10]
+        } for r in cursor.fetchall()
     ]
     return recents_dicts
+
+
+def get_recent_tracks(days_ago_start, days_ago_end, cursor):
+    now = int(datetime.now().timestamp())
+    return get_scrobbles_from_date_range(now - days_ago_start * 86400, now - days_ago_end * 86400, cursor)
 
 
 def getAllPlaylists(user_id, sp):
@@ -249,11 +260,11 @@ def merge_albums(uris, sp, db, cursor):
                 db.commit()
 
 
-def compile_circle_image(size, image_urls):
-    images = len(image_urls)
+def compile_circle_image(size, image_urls_and_amounts, total):
+    angle = 0
     big_image = Image.new('RGB', [size, size])
 
-    for id, url in enumerate(image_urls):
+    for url, amount in image_urls_and_amounts:
         print('Building image...')
         response = requests.get(url, stream=True)
         image = Image.open(io.BytesIO(response.content))
@@ -262,7 +273,8 @@ def compile_circle_image(size, image_urls):
 
         slice = Image.new('L', [size, size], 0)
         draw = ImageDraw.Draw(slice)
-        draw.pieslice([(0, 0), (size, size)], id / images * 360, (id+1) / images * 360, fill='white', outline='white')
+        draw.pieslice([(0, 0), (size, size)], angle, angle + amount * 360 / total, fill='white', outline='white')
+        angle += amount * 360 / total
 
         big_image.paste(resized, mask=slice)
 

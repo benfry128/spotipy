@@ -7,7 +7,7 @@ days = int(input("How many days back would you like to go? "))
 
 MY_USER_ID = os.getenv('ME_SPOTIFY_ID')
 
-recents = utils.getRecentTracks(days, 0, sp)
+recents = utils.get_recent_tracks(days, 0, sp)
 
 recentDict = {}
 for recent in recents:
