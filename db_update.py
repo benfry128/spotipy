@@ -111,7 +111,7 @@ for seconds in range(start_time, int(time.time()), 43200):
                     album_source = 'yt'
                     album_type = input("Album type? ")
                     if album_type in ['single', 'video']:
-                        album_title = title
+                        album_title = title if album_type == 'single' else input("Album title? ")
                         album_uri = uri[:uri.index('?')] if '?' in uri else uri
                         yt_api_type = 'videos'
                     else:
