@@ -1,7 +1,7 @@
 import utils
 import os
 
-sp = utils.spotipySetup()
+sp = utils.spotipy_setup()
 
 db, cursor = utils.db_setup()
 

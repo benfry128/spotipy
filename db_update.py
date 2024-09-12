@@ -1,9 +1,9 @@
 import time
 import requests
-from utils import album_explicit_and_few_artists, db_setup, LAST_FM_API_KEY, remove_apostrophe, spotipySetup, strip_str, YOUTUBE_API_KEY
+from utils import album_explicit_and_few_artists, db_setup, LAST_FM_API_KEY, remove_apostrophe, spotipy_setup, strip_str, YOUTUBE_API_KEY
 from datetime import datetime
 
-sp = spotipySetup()
+sp = spotipy_setup()
 
 (db, cursor) = db_setup()
 

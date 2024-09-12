@@ -8,7 +8,7 @@ def change_singles_to_albums(sp, db, cursor):
 
     albums = cursor.fetchall()
 
-    for (single_id, single_name) in albums:
+    for single_id, single_name in albums:
         print(single_id)
         print(single_name)
         cursor.execute('select track, artist, track_id from track_album_main_artist where album_id = %s', [single_id])

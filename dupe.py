@@ -1,7 +1,7 @@
 import random
 import utils
 
-sp = utils.spotipySetup()
+sp = utils.spotipy_setup()
 
 playlist_ids = [
     ["5Lh62TlIAUHgaFYo6IE2cZ", "1ciFrlllVeEBETOkvFn4qN"],  # bangers

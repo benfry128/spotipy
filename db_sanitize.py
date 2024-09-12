@@ -33,11 +33,11 @@ for dupe_check in dupe_checks:
 
 # gotta check for dupes in tracks as well
 cursor.execute('SELECT track, artist FROM track_album_main_artist GROUP BY track, artist HAVING COUNT(*) > 1;')
-for (track, artist) in cursor.fetchall():
+for track, artist in cursor.fetchall():
     print(f"Ok let's talk about {track} by {artist}")
     cursor.execute('SELECT track_id, album FROM track_album_main_artist WHERE track = %s AND artist = %s', (track, artist))
     dupe_records = cursor.fetchall()
-    for (id, album) in dupe_records:
+    for id, album in dupe_records:
         print(f"This version is off the {album} album")
 
     keep_id = input("Which one would you like to keep? (0-indexed, press enter to change nothing")

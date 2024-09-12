@@ -1,6 +1,6 @@
 import utils
 
-sp = utils.spotipySetup()
+sp = utils.spotipy_setup()
 
 results = utils.getAllTracks('https://open.spotify.com/playlist/1ciFrlllVeEBETOkvFn4qN?si=23930ee47fd34dac', sp)
 

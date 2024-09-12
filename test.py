@@ -2,7 +2,7 @@ import utils
 from datetime import datetime
 from pprint import pprint
 
-sp = utils.spotipySetup()
+sp = utils.spotipy_setup()
 
 (db, cursor) = utils.db_setup()
 

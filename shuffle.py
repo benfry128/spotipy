@@ -2,7 +2,7 @@ import random
 import time
 import utils
 
-sp = utils.spotipySetup()
+sp = utils.spotipy_setup()
 
 startTime = int((time.time()-14400) / 86400) * 86400 - 72000
 endTime = startTime + 86400

@@ -2,7 +2,7 @@ import utils
 import os
 from pprint import pprint
 
-sp = utils.spotipySetup()
+sp = utils.spotipy_setup()
 
 MY_USER_ID = os.getenv('ME_SPOTIFY_ID')
 USER_ID_INPUT = input('User id? ')

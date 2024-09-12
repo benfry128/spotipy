@@ -3,7 +3,7 @@ import random
 import os
 from datetime import datetime, timezone
 
-sp = utils.spotipySetup()
+sp = utils.spotipy_setup()
 
 # SETTINGS
 EXCLUDE_COLLAB_PLAYLISTS = True
