@@ -20,10 +20,10 @@ punctuation_list = list(punctuation)
 
 letters = 'abcdefghijklmnopqrstuvwxyz'
 letter_list = list(letters)
-letterDict = {}
+letter_dict = {}
 
 for letter in letters:
-    letterDict[letter] = {}
+    letter_dict[letter] = {}
 
 all_playlists = False
 
@@ -32,12 +32,12 @@ for playlist in playlists:
         print(f"{playlist['name']} EXCLUDED")
         continue
     if not all_playlists:
-        readPlaylist = input(f"Include playlist {playlist['name']}? (y/n/s to skip the rest/a to read the rest) ")
-        if readPlaylist == 's':
+        read_playlist = input(f"Include playlist {playlist['name']}? (y/n/s to skip the rest/a to read the rest) ")
+        if read_playlist == 's':
             break
-        elif readPlaylist == 'a':
+        elif read_playlist == 'a':
             all_playlists = True
-        elif readPlaylist != 'y':
+        elif read_playlist != 'y':
             continue
     print(playlist['name'])
     tracks = utils.getAllTracks(playlist['uri'], sp)
@@ -57,24 +57,23 @@ for playlist in playlists:
         if not first_letter:
             continue
 
-        letterDict[first_letter][track_id] = 1
+        letter_dict[first_letter][track_id] = 1
 
 # loop through letter dict to choose a song from
 
-allLetters = True
-for letter in letterDict:
-    if not letterDict[letter].keys():
-        allLetters = False
+all_letters = True
+for letter in letter_dict:
+    if not letter_dict[letter].keys():
+        all_letters = False
         break
 
 final_uris = []
 
-if allLetters or input("Playlist will not be complete, continue? (y/n) ") == 'y':
-    for letter in letterDict:
-        maxFreq = 0
+if all_letters or input("Playlist will not be complete, continue? (y/n) ") == 'y':
+    for letter in letter_dict:
         uris = []
 
-        for uri in letterDict[letter]:
+        for uri in letter_dict[letter]:
             uris.append(uri)
         if uris:
             final_uris.append(uris[random.randint(0, len(uris) - 1)])
