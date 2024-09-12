@@ -3,19 +3,21 @@ import os
 
 sp = utils.spotipySetup()
 
+db, cursor = utils.db_setup()
+
 days = int(input("How many days back would you like to go? "))
 
 MY_USER_ID = os.getenv('ME_SPOTIFY_ID')
 
-recents = utils.get_recent_tracks(days, 0, sp)
+recents = utils.get_recent_tracks(days, 0, cursor)
 
-recentDict = {}
+recent_dict = {}
 for recent in recents:
-    nameAndArtist = f'{recent['name']} {recent['artist']}'.lower()
-    if nameAndArtist in recentDict:
-        recentDict[nameAndArtist] += 1
+    name_and_artist = f'{recent['track']} by {recent['artist']}'.lower()
+    if name_and_artist in recent_dict:
+        recent_dict[name_and_artist] += 1
     else:
-        recentDict[nameAndArtist] = 1
+        recent_dict[name_and_artist] = 1
 
 playlists = utils.getAllPlaylists(MY_USER_ID, sp)
 
@@ -38,37 +40,35 @@ for playlist in playlists:
 
     print(f"Analyzing {len(tracks)} tracks from playlist{name}")
 
-    leastPlays = 1000000
-    mostPlays = 0
-    leastList = []
-    mostList = []
+    least_plays = 1000000
+    most_plays = 0
+    least_list = []
+    most_list = []
 
     for track in tracks:
-        trackName = track['name']
-        trackArtist = track['artists'][0]['name']
-        trackId = track['uri']
-        code = f'{trackName} {trackArtist}'.lower()
-        if code in recentDict:
-            frequency = recentDict[code]
-            if frequency > mostPlays:
-                mostPlays = frequency
-                mostList = [f'{trackName} by {trackArtist}']
-            elif frequency == mostPlays:
-                mostList.append(f'{trackName} by {trackArtist}')
-            if frequency < leastPlays:
-                leastPlays = frequency
-                leastList = [f'{trackName} by {trackArtist}']
-            elif frequency == leastPlays:
-                leastList.append(f'{trackName} by {trackArtist}')
+        name_and_artist = f'{track['name']} by {track['artists'][0]['name']}'.lower()
+        uri = track['uri']
+        if name_and_artist in recent_dict:
+            frequency = recent_dict[name_and_artist]
+            if frequency > most_plays:
+                most_plays = frequency
+                most_list = [name_and_artist]
+            elif frequency == most_plays:
+                most_list.append(name_and_artist)
+            if frequency < least_plays:
+                least_plays = frequency
+                least_list = [name_and_artist]
+            elif frequency == least_plays:
+                least_list.append(name_and_artist)
         else:
-            if leastPlays > 0:
-                leastList = [f'{trackName} by {trackArtist}']
+            if least_plays > 0:
+                least_list = [name_and_artist]
             else:
-                leastList.append(f'{trackName} by {trackArtist}')
-            leastPlays = 0
-    print(f'The most times any song was played was {mostPlays}\nThose were: ')
-    for track in mostList:
+                least_list.append(name_and_artist)
+            least_plays = 0
+    print(f'\nThe most times any song was played was {most_plays}\nThose were: ')
+    for track in most_list:
         print(track)
-    print(f'The least times any song was played was {leastPlays}\nThose were: ')
-    for track in leastList:
+    print(f'\nThe least times any song was played was {least_plays}\nThose were: ')
+    for track in least_list:
         print(track)
