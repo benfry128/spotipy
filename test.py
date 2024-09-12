@@ -4,7 +4,7 @@ from pprint import pprint
 
 sp = utils.spotipy_setup()
 
-(db, cursor) = utils.db_setup()
+db, cursor = utils.db_setup()
 
 # cursor.execute('''select count(utc), image from
 # scrobbles join track_album_main_artist on scrobbles.track_id = track_album_main_artist.track_id

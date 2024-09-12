@@ -94,7 +94,7 @@ def get_recent_tracks(days_ago_start, days_ago_end, cursor):
     return get_scrobbles_from_date_range(now - days_ago_start * 86400, now - days_ago_end * 86400, cursor)
 
 
-def getAllPlaylists(user_id, sp):
+def get_all_playlists(user_id, sp):
     total_playlists = sp.user_playlists(user_id)['total']
 
     offset = 0
@@ -106,7 +106,7 @@ def getAllPlaylists(user_id, sp):
     return playlists
 
 
-def getAllTracks(playlist_id, sp):
+def get_all_tracks(playlist_id, sp):
     print("Getting tracks 0-99")
     result = sp.playlist_tracks(playlist_id)
     total_tracks = result['total']
@@ -127,7 +127,7 @@ def getAllTracks(playlist_id, sp):
             if 'US' in track['track']['available_markets']:
                 real_tracks.append(track['track'])
             else:
-                alt = trackDownTrack(track['track'], sp)
+                alt = track_down_track(track['track'], sp)
                 if alt:
                     real_tracks.append(alt)
 
@@ -135,7 +135,7 @@ def getAllTracks(playlist_id, sp):
     return real_tracks
 
 
-def trackDownTrack(track, sp):
+def track_down_track(track, sp):
     goodName = track['name'].lower()
     goodArtist = track['artists'][0]['name'].lower()
     isrc = track['external_ids']['isrc']

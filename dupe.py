@@ -10,7 +10,7 @@ playlist_ids = [
 ]
 
 for old_id, new_id in playlist_ids:
-    uris = [track['uri'] for track in utils.getAllTracks(old_id, sp)]
+    uris = [track['uri'] for track in utils.get_all_tracks(old_id, sp)]
 
     random.shuffle(uris)
 

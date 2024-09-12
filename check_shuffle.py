@@ -19,7 +19,7 @@ for recent in recents:
     else:
         recent_dict[name_and_artist] = 1
 
-playlists = utils.getAllPlaylists(MY_USER_ID, sp)
+playlists = utils.get_all_playlists(MY_USER_ID, sp)
 
 for playlist in playlists:
     print("~" * 200)
@@ -36,7 +36,7 @@ for playlist in playlists:
     elif analyze == 'n':
         continue
 
-    tracks = utils.getAllTracks(uri, sp)
+    tracks = utils.get_all_tracks(uri, sp)
 
     print(f"Analyzing {len(tracks)} tracks from playlist{name}")
 

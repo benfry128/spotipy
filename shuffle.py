@@ -25,7 +25,7 @@ for playlist_pair in playlist_ids:
     playlist = sp.playlist(new_id)
     print(playlist['name'])
 
-    tracks = utils.getAllTracks(new_id, sp)
+    tracks = utils.get_all_tracks(new_id, sp)
     print(len(tracks))
 
     back_of_list = []

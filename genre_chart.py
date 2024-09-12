@@ -8,7 +8,7 @@ MY_USER_ID = os.getenv('ME_SPOTIFY_ID')
 USER_ID_INPUT = input('User id? ')
 USER_ID = MY_USER_ID if USER_ID_INPUT == 'mine' else USER_ID_INPUT
 
-playlists = utils.getAllPlaylists(USER_ID, sp)
+playlists = utils.get_all_playlists(USER_ID, sp)
 
 skip_playlists = ['Bangers', 'Vibes', 'Thonkers', 'Classics - Hi', 'Classics - Lo', 'To Listen', ]
 
@@ -28,7 +28,7 @@ for playlist in playlists:
         continue
 
     print(playlist['name'])
-    tracks = utils.getAllTracks(playlist['uri'], sp)
+    tracks = utils.get_all_tracks(playlist['uri'], sp)
     for track in tracks:
         for artist in track['artists']:
             artist_uri = artist['uri']

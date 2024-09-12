@@ -2,7 +2,7 @@ import utils
 
 sp = utils.spotipy_setup()
 
-results = utils.getAllTracks('https://open.spotify.com/playlist/1ciFrlllVeEBETOkvFn4qN?si=23930ee47fd34dac', sp)
+results = utils.get_all_tracks('https://open.spotify.com/playlist/1ciFrlllVeEBETOkvFn4qN?si=23930ee47fd34dac', sp)
 
 albums = {}
 for track in results:
