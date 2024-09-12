@@ -13,7 +13,7 @@ MY_USER_ID = os.getenv('ME_SPOTIFY_ID')
 USER_ID_INPUT = input('User id? ')
 USER_ID = MY_USER_ID if USER_ID_INPUT == 'mine' else USER_ID_INPUT
 
-playlists = utils.getAllPlaylists(USER_ID, sp)
+playlists = utils.get_all_playlists(USER_ID, sp)
 
 punctuation = '\'"()*&^%$#@!.,></?;:[]{}\\|-++_`~'
 punctuation_list = list(punctuation)
@@ -40,7 +40,7 @@ for playlist in playlists:
         elif read_playlist != 'y':
             continue
     print(playlist['name'])
-    tracks = utils.getAllTracks(playlist['uri'], sp)
+    tracks = utils.get_all_tracks(playlist['uri'], sp)
 
     for track in tracks:
         if track['explicit'] and not EXPLICIT_ALLOWED:
