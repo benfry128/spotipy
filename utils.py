@@ -229,7 +229,7 @@ def merge_albums(uris, sp, db, cursor):
             print(ti)
     input('Do you need to go and merge some tracks first????')
 
-    for (uri, album_dict, s) in zip(uris, album_dicts, titles):
+    for uri, album_dict, s in zip(uris, album_dicts, titles):
         print(f"Let's see about this url: {uri}")
         print(f'We have {len(s)} tracks in the db related to this url')
         good = True

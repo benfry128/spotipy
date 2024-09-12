@@ -1,17 +1,14 @@
 import random
-import time
 import utils
 
 sp = utils.spotipy_setup()
+db, cursor = utils.db_setup()
 
-startTime = int((time.time()-14400) / 86400) * 86400 - 72000
-endTime = startTime + 86400
+recents = utils.get_recent_tracks(1, 0, cursor)
 
-recents = utils.get_recent_tracks(1, 1, sp)
-
-recentDict = {}
+recent_dict = {}
 for recent in recents:
-    recentDict[f'{recent['name']} {recent['artist']}'.lower()] = True
+    recent_dict[f'{recent['track']} {recent['artist']}'.lower()] = True
 
 playlist_ids = [
     ["5Lh62TlIAUHgaFYo6IE2cZ", "1ciFrlllVeEBETOkvFn4qN"],  # bangers
@@ -19,9 +16,7 @@ playlist_ids = [
     ["42C2EObXUN25rSCzM99QTK", "1hNFjAax1k8n36HYIqT8V2"]   # vibes
 ]
 
-for playlist_pair in playlist_ids:
-    new_id = playlist_pair[1]
-
+for old_id, new_id in playlist_ids:
     playlist = sp.playlist(new_id)
     print(playlist['name'])
 
@@ -31,14 +26,14 @@ for playlist_pair in playlist_ids:
     back_of_list = []
     front_of_list = []
     for track in tracks:
-        trackName = track['name']
-        trackArtist = track['artists'][0]['name']
-        trackId = track['uri']
-        if f'{trackName} {trackArtist}'.lower() in recentDict:
-            print(trackName + " was in recents")
-            back_of_list.append(trackId)
+        track_name = track['name']
+        track_artist = track['artists'][0]['name']
+        track_uri = track['uri']
+        if f'{track_name} {track_artist}'.lower() in recent_dict:
+            print(track_name + " was in recents")
+            back_of_list.append(track_uri)
         else:
-            front_of_list.append(trackId)
+            front_of_list.append(track_uri)
 
     front_len = len(front_of_list)
     front_front = front_of_list[:front_len // 2]
