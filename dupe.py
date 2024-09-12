@@ -9,21 +9,13 @@ playlist_ids = [
     ["42C2EObXUN25rSCzM99QTK", "1hNFjAax1k8n36HYIqT8V2"]   # vibes
 ]
 
-for pair in playlist_ids:
-    old_id = pair[0]
-    new_id = pair[1]
+for old_id, new_id in playlist_ids:
+    uris = [track['uri'] for track in utils.getAllTracks(old_id, sp)]
 
-    tracks = utils.getAllTracks(old_id, sp)
+    random.shuffle(uris)
 
-    trackIds = []
-    for track in tracks:
-        trackId = track['uri']
-        trackIds.append(trackId)
-
-    random.shuffle(trackIds)
-
-    sp.playlist_replace_items(new_id, trackIds[0:100])
+    sp.playlist_replace_items(new_id, uris[0:100])
     offset = 100
-    while offset < len(trackIds):
-        sp.playlist_add_items(new_id, trackIds[offset:offset+100])
+    while offset < len(uris):
+        sp.playlist_add_items(new_id, uris[offset:offset+100])
         offset += 100
