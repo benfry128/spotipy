@@ -125,7 +125,7 @@ for seconds in range(start_time, int(time.time()), 43200):
                             image = sp_album['images'][0]['url'][24:]
                         else:
                             album_title = input("Album title? ")
-                            album_uri = album_url[40:]
+                            album_uri = album_url[38:]
                             yt_api_type = 'playlists'
 
                     if album_source == 'yt':
