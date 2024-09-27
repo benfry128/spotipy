@@ -85,9 +85,6 @@ for seconds in range(start_time, int(time.time()), 43200):
         if bridge_codes[0] in last_fm_str_dict:
             track_id = last_fm_str_dict[bridge_codes[0]]
         else:
-            if 'remaster' in lfm_title.lower():
-                lfm_title = input("Please input a version of this that removes the 'remastered' part. Thanks! ")
-
             sp_tracks = sp.search(q=f'track:{remove_apostrophe(lfm_title)} artist:{remove_apostrophe(remove_comma_from_artist)}', type='track', limit=10)['tracks']['items']
 
             good_track = search_spotify_tracks(sp_tracks, bridge_codes)
@@ -137,11 +134,11 @@ for seconds in range(start_time, int(time.time()), 43200):
 
                     corrected_artist = input("If the primary artist's name is wrong, put it in correctly here: ")
                     artist_url = input("URL of primary artist? ")
-                    artists = [{'name': corrected_artist if corrected_artist else lfm_artist, 'uri': artist_url[(32 if artist_url[8] == 'o' else 34):], 'source': 'sp' if artist_url[8] == 'o' else 'yt'}]
+                    artists = [{'name': corrected_artist if corrected_artist else lfm_artist, 'uri': artist_url[(30 if artist_url[8] == 'o' else 32):], 'source': 'sp' if artist_url[8] == 'o' else 'yt'}]
                     additional_artist_name = input("Other artists? Add name here: ")
                     while additional_artist_name:
                         artist_url = input("URL of that artist? ")  # @TODO: maybe convert this so it just takes the url and then converts the url just before adding it to the db
-                        artists.append({'name': corrected_artist if corrected_artist else lfm_artist, 'uri': artist_url[(32 if artist_url[8] == 'o' else 34):], 'source': 'sp' if artist_url[8] == 'o' else 'yt'})
+                        artists.append({'name': corrected_artist if corrected_artist else lfm_artist, 'uri': artist_url[(30 if artist_url[8] == 'o' else 32):], 'source': 'sp' if artist_url[8] == 'o' else 'yt'})
                         additional_artist_name = input("Other artists? Add name here: ")
                     runtime = int(input("Runtime? "))
 
