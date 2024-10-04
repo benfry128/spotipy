@@ -25,6 +25,16 @@ def remove_apostrophe(string):
     return re.sub("'", '', string).lower()
 
 
+def iso_to_seconds(iso):
+    m_index = iso.find('M')
+    if m_index == -1:
+        return int(iso[2:-1]) + 1
+    else:
+        minutes = int(iso[2:m_index])
+        seconds = int(iso[m_index+1:-1]) if m_index + 1 < len(iso) else 0
+        return minutes * 60 + seconds
+
+
 def spotipy_setup():
     scope = 'ugc-image-upload user-read-playback-state user-modify-playback-state user-read-currently-playing playlist-read-private playlist-read-collaborative playlist-modify-private playlist-modify-public  user-follow-modify user-follow-read user-read-playback-position user-top-read user-read-recently-played user-library-modify user-library-read user-read-email user-read-private'
     return spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=SPOTIFY_CLIENT_ID,
