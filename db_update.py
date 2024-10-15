@@ -144,12 +144,12 @@ for seconds in range(start_time, int(time.time()), 43200):
                                 album_uri = album_url[38:]
                                 yt_api_type = 'playlists'
                         corrected_artist = input("If the primary artist's name is wrong, put it in correctly here: ")
-                        artist_url = input("URL of primary artist? ")
-                        artists = [{'name': corrected_artist if corrected_artist else lfm_artist, 'uri': artist_url[(30 if artist_url[8] == 'o' else 32):], 'source': 'sp' if artist_url[8] == 'o' else 'yt'}]
+                        artist_url = input("Channel ID or spotify URL of primary artist? ")
+                        artists = [{'name': corrected_artist if corrected_artist else lfm_artist, 'uri': artist_url[0 if artist_url[0] == 'U' else 32:], 'source': 'sp' if artist_url[0] == 'U' else 'yt'}]
                         additional_artist_name = input("Other artists? Add name here: ")
                         while additional_artist_name:
-                            artist_url = input("URL of that artist? ")  # @TODO: maybe convert this so it just takes the url and then converts the url just before adding it to the db
-                            artists.append({'name': corrected_artist if corrected_artist else lfm_artist, 'uri': artist_url[(30 if artist_url[8] == 'o' else 32):], 'source': 'sp' if artist_url[8] == 'o' else 'yt'})
+                            artist_url = input("Channel ID or spotify URL of primary artist? ")  # @TODO: maybe convert this so it just takes the url and then converts the url just before adding it to the db
+                            artists.append({'name': corrected_artist if corrected_artist else lfm_artist, 'uri': artist_url[0 if artist_url[0] == 'U' else 32:], 'source': 'sp' if artist_url[0] == 'U' else 'yt'})
                             additional_artist_name = input("Other artists? Add name here: ")
 
                     if album_source == 'yt':
