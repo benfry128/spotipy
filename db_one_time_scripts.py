@@ -165,6 +165,7 @@ def remove_unneeded_uri_info(db, cursor):
 
     print(len(tracks))
 
+
 sp = utils.spotipy_setup()
 
 db, cursor = utils.db_setup()
