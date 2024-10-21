@@ -131,3 +131,42 @@ def add_album_art(sp, db, cursor):
                 cursor.execute('UPDATE albums SET image = %s where id = %s', [thumbnails[size]['url'], db_id])
                 db.commit()
                 break
+
+
+def merge_carriage_return_albums(db, cursor):
+    cursor.execute("SELECT * FROM albums where uri like '%\r';")
+
+    albums = cursor.fetchall()
+
+    for album in albums:
+        # print(album)
+        cursor.execute('Select * from albums where uri = %s', [album[1][:-1]])
+        real = cursor.fetchall()[0]
+        cursor.execute('update tracks set album_id = %s where album_id = %s', [real[0], album[0]])
+
+        print(real)
+        # if album[1][-1] == '\r':
+        #     print(album[1])
+        #     input("HI")
+        #     cursor.execute('update albums set uri = %s where uri = %s', [album[1][:-1], album[1]])
+    db.commit()
+
+
+def remove_unneeded_uri_info(db, cursor):
+    cursor.execute("select * from tracks where source = 'yt' and (uri like '%&pp%' or uri like '%&list%');")
+    tracks = cursor.fetchall()
+
+    for track in tracks:
+        uri = track[3]
+        index = uri.find('&')
+        new_uri = uri[:index]
+        cursor.execute('update tracks set uri = %s where uri = %s', [new_uri, uri])
+        db.commit()
+
+    print(len(tracks))
+
+sp = utils.spotipy_setup()
+
+db, cursor = utils.db_setup()
+
+remove_unneeded_uri_info(db, cursor)
