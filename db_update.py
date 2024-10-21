@@ -104,6 +104,10 @@ for seconds in range(start_time, int(time.time()), 43200):
                     track_source = 'yt'
                     album_source = 'yt'
                     uri = url[(32 if url[8] == 'w' else 17):]
+                    if 'list' in uri:
+                        uri = uri[:uri.index('list') - 1]
+                    if '&pp' in uri:
+                        uri = uri[:uri.index('&pp')]
                     data = requests.get(f'https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id='
                                         f'{uri[:uri.index('?')] if '?' in uri else uri}&key={YOUTUBE_API_KEY}').json()['items'][0]
                     runtime = iso_to_seconds(data['contentDetails']['duration'])
