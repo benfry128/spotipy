@@ -111,17 +111,18 @@ for seconds in range(start_time, int(time.time()), 43200):
                     data = requests.get(f'https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id='
                                         f'{uri[:uri.index('?')] if '?' in uri else uri}&key={YOUTUBE_API_KEY}').json()['items'][0]
                     runtime = iso_to_seconds(data['contentDetails']['duration'])
+                    snippet = data['snippet']
 
                     # siIvaGunner song
-                    if data['snippet']['channelId'] == 'UC9ecwl3FTG66jIKA9JRDtmg':
-                        dash_location = data['snippet']['title'].rfind('-')
-                        title = data['snippet']['title'][:dash_location - 1]
-                        album_title = data['snippet']['title'][dash_location + 2:]
+                    if snippet['channelId'] == 'UC9ecwl3FTG66jIKA9JRDtmg':
+                        dash_location = snippet['title'].rfind('-')
+                        title = snippet['title'][:dash_location - 1]
+                        album_title = snippet['title'][dash_location + 2:]
                         album_type = 'album'
                         artists = [{'name': 'SiIvaGunner', 'uri': 'UC9ecwl3FTG66jIKA9JRDtmg', 'source': 'yt'}]
-                        playlist_index = data['snippet']['description'].find('?list=')+6
+                        playlist_index = snippet['description'].find('?list=')+6
                         if playlist_index != -1:
-                            album_uri = data['snippet']['description'][playlist_index:data['snippet']['description'].find('\n', playlist_index)]
+                            album_uri = snippet['description'][playlist_index:min(snippet['description'].find('\n', playlist_index), snippet['description'].find('\r', playlist_index))]
                         else:
                             album_uri = input("Input playlist url: ")[38:]
                         yt_api_type = 'playlists'
@@ -176,6 +177,12 @@ for seconds in range(start_time, int(time.time()), 43200):
                 image = good_track['album']['images'][0]['url'][24:]
                 artists = [{'name': artist['name'], 'uri': artist['id'], 'source': 'sp'} for artist in good_track['artists']]
                 runtime = int(good_track['duration_ms'] / 1000)
+
+            # strip all uris to ensure whitespace doesn't sneak into db
+            uri = uri.strip()
+            album_uri = album_uri.strip()
+            for artist in artists:
+                artist['uri'] = artist['uri'].strip()
 
             cursor.execute('SELECT id FROM tracks WHERE uri = %s AND source = %s', [uri, track_source])
             results = cursor.fetchone()
