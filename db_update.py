@@ -122,7 +122,7 @@ for seconds in range(start_time, int(time.time()), 43200):
                         artists = [{'name': 'SiIvaGunner', 'uri': 'UC9ecwl3FTG66jIKA9JRDtmg', 'source': 'yt'}]
                         playlist_index = snippet['description'].find('?list=')+6
                         if playlist_index != -1:
-                            album_uri = snippet['description'][playlist_index:min(snippet['description'].find('\n', playlist_index), snippet['description'].find('\r', playlist_index))]
+                            album_uri = snippet['description'][playlist_index:min((snippet['description']+'\n').find('\n', playlist_index), (snippet['description']+'\r').find('\r', playlist_index))]
                         else:
                             album_uri = input("Input playlist url: ")[38:]
                         yt_api_type = 'playlists'

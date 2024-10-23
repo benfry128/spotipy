@@ -57,7 +57,7 @@ def db_setup():
 
 
 def merge_tracks(good_track, bad_track, db, cursor):
-    cursor.execute('select track, artist from track_album_main_artist where track_id in (%s, %s)', (good_track, bad_track))
+    cursor.execute('select track, artist from `all` where track_id in (%s, %s)', (good_track, bad_track))
 
     [(name1, artist1), (name2, artist2)] = cursor.fetchall()
 
