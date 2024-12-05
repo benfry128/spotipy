@@ -195,7 +195,7 @@ def sp_tracks(sp, cursor):
 
 
 def sp_albums(sp, cursor):
-    cursor.execute("SELECT url FROM albums where url like '%spotify%';")
+    cursor.execute("SELECT uri FROM albums where source = 'sp' and id < 20;")
 
     albums = [row[0] for row in cursor.fetchall()]
     sp_albums = []
@@ -212,7 +212,7 @@ def album_explicit_and_few_artists(sp_album):
     tracks_explicit = bool([1 for track in tracks if track['explicit']])
     three_or_fewer_artists = len(set([track['artists'][0]['name'] for track in tracks])) <= 3
 
-    return f'{tracks_explicit} and {three_or_fewer_artists}'
+    return tracks_explicit and three_or_fewer_artists
 
 
 def merge_albums(uris, sp, db, cursor):
