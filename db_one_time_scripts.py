@@ -4,28 +4,30 @@ import requests
 
 
 def change_singles_to_albums(sp, db, cursor):
-    cursor.execute('SELECT id, name from albums where type = "single" and source = "sp" and id > 273 order by id')
+    cursor.execute('SELECT id, name from albums where type = "single" and source = "sp" and id > 1673 order by id')
 
     albums = cursor.fetchall()
 
     for single_id, single_name in albums:
         print(single_id)
         print(single_name)
-        cursor.execute('select track, artist, track_id from track_album_main_artist where album_id = %s', [single_id])
+        cursor.execute('select track, artist, track_id from all_urls where album_id = %s', [single_id])
         tracks = cursor.fetchall()
         for (single_track, single_artist, single_track_id) in tracks:
-            print(f'track: {single_track} artist: {single_artist}')
+            print(f'track: {single_track} artist: {single_artist}\n')
             possible_tracks = sp.search(q=f'track:{single_track} artist:{single_artist}', type='track', limit=10)['tracks']['items']
             skip = True
             for track in possible_tracks:
                 if track['name'] == single_track:
                     if track['album']['album_type'] == 'album':
                         print(f"Track: {track['name']} Album {track['album']['name']}. url is {track['external_urls']['spotify']}")
+                        print("This one is labeled as an album")
                         skip = False
 
                     if track['album']['name'] != single_name:
                         cursor.execute('select id from albums where uri = %s', [track['album']['id']])
                         if cursor.fetchall():
+                            print(f"Track: {track['name']}. Album {track['album']['name']}. url is {track['external_urls']['spotify']}")
                             print("WE GOT A HIT IN THE DB THIS IS GOOD")
                             skip = False
 
@@ -170,4 +172,4 @@ sp = utils.spotipy_setup()
 
 db, cursor = utils.db_setup()
 
-remove_unneeded_uri_info(db, cursor)
+change_singles_to_albums(sp, db, cursor)
