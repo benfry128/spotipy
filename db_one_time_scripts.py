@@ -78,7 +78,8 @@ def swap_out_clean_versions_of_albums(sp, db, cursor):
                     if not album['external_urls']['spotify'] == sp_album['external_urls']['spotify'] and album['name'] == sp_album['name']:
                         print(album['external_urls']['spotify'])
                         if not input('Maybe this one would be better?'):
-                            cursor.execute('insert into albums (url, title, type) values (%s, %s, %s)', [album['external_urls']['spotify'], album['name'], album['album_type']])
+                            cursor.execute('INSERT INTO albums (uri, name, type, source, image) VALUES (%s, %s, %s, %s, %s)', (album['id'], album['name'], album['album_type'], 'sp', album['images'][0]['url'][24:]))
+
                             cursor.execute('update tracks set album = %s where album = %s', [album['external_urls']['spotify'], sp_album['external_urls']['spotify']])
                             db.commit()
 
