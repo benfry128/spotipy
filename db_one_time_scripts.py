@@ -79,7 +79,7 @@ def swap_out_clean_versions_of_albums(sp, db, cursor):
                         print(album['external_urls']['spotify'])
                         if not input('Maybe this one would be better?'):
                             cursor.execute('INSERT INTO albums (uri, name, type, source, image) VALUES (%s, %s, %s, %s, %s)', (album['id'], album['name'], album['album_type'], 'sp', album['images'][0]['url'][24:]))
-
+                            # @TODO: fix so that this code updates track uris, not just album stuff
                             cursor.execute('update tracks set album = %s where album = %s', [album['external_urls']['spotify'], sp_album['external_urls']['spotify']])
                             db.commit()
 
@@ -169,8 +169,35 @@ def remove_unneeded_uri_info(db, cursor):
     print(len(tracks))
 
 
+# bad version of swap_out_clean_versions_of_albums above caused album uris to change without updating their constituent track uris, this code fixes it
+def fix_track_uris_to_match_album_uris(sp, cursor, db):
+    cursor.execute("SELECT tracks.id, tracks.uri, albums.uri, tracks.name FROM tracks join albums on tracks.album_id = albums.id where tracks.source = 'sp';")
+    data = cursor.fetchall()
+
+    sp_data = []
+
+    for i in range(0, len(data), 50):
+        sp_data.extend(sp.tracks([record[1] for record in data[i:i+50]])['tracks'])
+        print(len(sp_data))
+
+    if len(sp_data) != len(data):
+        input('stop it this is bad news bears')
+
+    for i in range(len(data)):
+        if data[i][2] != sp_data[i]['album']['id']:
+            print(data[i][3])
+            print(data[i][2])
+            print(sp_data[i]['album']['id'])
+            tracks = sp.album_tracks(data[i][2])
+            # print(tracks)
+            for track in tracks['items']:
+                if track['name'] == data[i][3]:
+                    print("ok found the song")
+                    cursor.execute('update tracks set uri = %s where id = %s', [track['id'], data[i][0]])
+                    db.commit()
+                    input(track['name'])
+
+
 sp = utils.spotipy_setup()
 
 db, cursor = utils.db_setup()
-
-change_singles_to_albums(sp, db, cursor)
