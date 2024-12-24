@@ -116,7 +116,7 @@ def get_all_playlists(user_id, sp):
     return playlists
 
 
-def get_all_tracks(playlist_id, sp):
+def get_all_tracks(playlist_id, sp, find_good_tracks=True):
     print("Getting tracks 0-99")
     result = sp.playlist_tracks(playlist_id)
     total_tracks = result['total']
@@ -129,6 +129,9 @@ def get_all_tracks(playlist_id, sp):
         offset += 100
 
     print(f'Retrieved {len(tracks)}')
+
+    if not find_good_tracks:
+        return tracks
 
     print('Now digging through to find good versions')
     real_tracks = []
