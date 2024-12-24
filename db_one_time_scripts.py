@@ -1,6 +1,7 @@
 import utils
 from pprint import pprint
 import requests
+import os
 
 
 def change_singles_to_albums(sp, db, cursor):
@@ -198,6 +199,31 @@ def fix_track_uris_to_match_album_uris(sp, cursor, db):
                     input(track['name'])
 
 
+def find_old_songs(sp, cursor, db):
+    MY_USER_ID = os.getenv('ME_SPOTIFY_ID')
+    playlists = utils.get_all_playlists(MY_USER_ID, sp)
+
+    for playlist in playlists:
+        tracks = utils.get_all_tracks(playlist['uri'], sp, False)
+        input(playlist['name'])
+        for track in tracks:
+            if track['added_at'][3] != '4':
+                cursor.execute('update tracks set old = 1 where uri = %s', [track['track']['id']])
+                if cursor.rowcount != 1:
+                    cursor.execute('select track_id from all_urls where track = %s and artist = %s',
+                                   [track['track']['name'], track['track']['artists'][0]['name']])
+
+                    ids = cursor.fetchall()
+                    if len(ids) != 1:
+                        input(track['track']['name'])
+                    else:
+                        cursor.execute('update tracks set old = 1 where id = %s', [ids[0][0]])
+
+            db.commit()
+
+
 sp = utils.spotipy_setup()
 
 db, cursor = utils.db_setup()
+
+find_old_songs(sp, cursor, db)
