@@ -204,10 +204,13 @@ def find_old_songs(sp, cursor, db):
     playlists = utils.get_all_playlists(MY_USER_ID, sp)
 
     for playlist in playlists:
+        if playlist['collaborative'] or not playlist['owner']['id'] == MY_USER_ID:
+            continue
+
         tracks = utils.get_all_tracks(playlist['uri'], sp, False)
         input(playlist['name'])
         for track in tracks:
-            if track['added_at'][3] != '4':
+            if int(track['added_at'][:4]) < 2024:
                 cursor.execute('update tracks set old = 1 where uri = %s', [track['track']['id']])
                 if cursor.rowcount != 1:
                     cursor.execute('select track_id from all_urls where track = %s and artist = %s',
@@ -219,7 +222,7 @@ def find_old_songs(sp, cursor, db):
 
             db.commit()
 
-    cursor.execute('select track_id, track, artist, album from all_urls where track_id > 1820 and not old order by track_id;')
+    cursor.execute('select track_id, track, artist, album from all_urls where track_id > 4685 and not old order by track_id;')
     tracks = cursor.fetchall()
     for (id, track, artist, album) in tracks:
         x = input(f'{id}:\n{track}\n{artist}\n{album}')
