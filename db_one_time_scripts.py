@@ -214,11 +214,17 @@ def find_old_songs(sp, cursor, db):
                                    [track['track']['name'], track['track']['artists'][0]['name']])
 
                     ids = cursor.fetchall()
-                    if len(ids) != 1:
-                        input(track['track']['name'])
-                    else:
+                    if len(ids) == 1:
                         cursor.execute('update tracks set old = 1 where id = %s', [ids[0][0]])
 
+            db.commit()
+
+    cursor.execute('select track_id, track, artist, album from all_urls where track_id > 1820 and not old order by track_id;')
+    tracks = cursor.fetchall()
+    for (id, track, artist, album) in tracks:
+        x = input(f'{id}:\n{track}\n{artist}\n{album}')
+        if x:
+            cursor.execute('update tracks set old = 1 where id = %s;', [id])
             db.commit()
 
 
