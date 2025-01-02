@@ -8,6 +8,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from PIL import Image, ImageDraw
 from spotipy.oauth2 import SpotifyOAuth
+import random
 
 load_dotenv()
 LAST_FM_API_KEY = os.getenv('LAST_FM_API_KEY')
@@ -167,21 +168,24 @@ def track_down_track(track, sp):
     return None
 
 
-def compile_square_image(to_a_side, size, image_urls):
-    bigImage = Image.new("RGB", (size * to_a_side, size * to_a_side))
+def compile_square_image(up_down, left_right, size, image_urls):
+    bigImage = Image.new("RGB", (size * left_right, size * up_down))
+
+    random.shuffle(image_urls)
 
     for id, url in enumerate(image_urls):
         print('Building image...')
         response = requests.get(url, stream=True)
         image = Image.open(io.BytesIO(response.content))
         image.thumbnail((size, size))
-        x = (id % to_a_side) * size
-        y = (id // to_a_side) * size
+        x = (id % left_right) * size
+        y = (id // left_right) * size
         bigImage.paste(image, (x, y))
         del image
         del response
 
-    bigImage.show()
+    bigImage.save(image_urls[0][-15:] + ".png")
+    input('Get the image if you want it')
 
 
 def sp_tracks(sp, cursor):
