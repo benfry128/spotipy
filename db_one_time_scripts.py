@@ -90,7 +90,7 @@ def add_popularity_scores(sp, db, cursor):
 
     for track in sp_tracks:
         print(f'{track['name']}\n{track['popularity']}')
-        cursor.execute('update tracks set popularity = %s where url = %s', [track['popularity'], track['external_urls']['spotify']])
+        cursor.execute('update tracks set popularity = %s where uri = %s', [track['popularity'], track['id']])
 
     db.commit()
 

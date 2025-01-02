@@ -189,7 +189,7 @@ def compile_square_image(up_down, left_right, size, image_urls):
 
 
 def sp_tracks(sp, cursor):
-    cursor.execute("select url from tracks where url like '%spotify%'")
+    cursor.execute("select uri from tracks where source = 'sp';")
 
     tracks = [row[0] for row in cursor.fetchall()]
     sp_tracks = []
