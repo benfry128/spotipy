@@ -22,8 +22,8 @@ def strip_str(string):
     return re.sub(r'\W+', '', string).lower()
 
 
-def remove_apostrophe(string):
-    return re.sub("'", '', string).lower()
+def remove_apostrophe_and_percent(string):
+    return re.sub("'|%", '', string).lower()
 
 
 def iso_to_seconds(iso):
