@@ -3,7 +3,7 @@ from datetime import datetime
 import utils
 import db_update
 
-f = open('Streaming_History_Audio_2021-2022_0.json', encoding='utf-8')
+f = open('Streaming_History_Audio_2023-2024_2.json', encoding='utf-8')
 
 text = f.read()
 
@@ -36,12 +36,12 @@ earliest_utc = cursor.fetchall()[0][0]
 for scrobble in dedupe:
     uri = scrobble['spotify_track_uri'].split(':')[2]
 
-    if scrobble['offline_timestamp'] is not None:
+    if scrobble['offline_timestamp'] is not None and scrobble['offline']:
         timestamp = scrobble['offline_timestamp'] if scrobble['offline_timestamp'] < 100000000000 else scrobble['offline_timestamp'] // 1000
     else:
         timestamp = datetime.strptime(scrobble['ts'], time_format_data).timestamp()
 
-    if timestamp <= earliest_utc:
+    if timestamp <= earliest_utc or timestamp > 1704178395:
         continue
 
     if timestamp == last_added_utc:
